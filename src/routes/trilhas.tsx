@@ -11,7 +11,7 @@ function Trilhas(){
  const completed=(id:string)=>TRACKS.find(t=>t.id===id)?.id==="fundamentos"
    ? LESSONS.filter(l=>!!d.completedLessons[l.id]).length
    : unitsForTrack(id).filter(u=>!!d.completedLessons["unit:"+u.id]).length;
- return <main className="space-y-5">
+ return <div className="space-y-5">
    <header><p className="text-sm font-semibold text-primary">Aprendizado organizado</p><h1 className="text-3xl font-extrabold">Trilhas de estudo</h1>
     <p className="mt-2 text-muted-foreground">Aprenda na ordem recomendada ou entre diretamente no tema de que precisa. Aulas e exemplos são autorais; materiais externos permanecem vinculados aos autores.</p></header>
    <div className="grid gap-4 md:grid-cols-2">
@@ -31,5 +31,5 @@ function Trilhas(){
    </div>
    <p className="text-sm text-muted-foreground">Para uma prática completa, combine explicação, execução de código, correção e projeto. O checklist dos projetos é de autoavaliação, não certificação.</p>
    <Link to="/projetos" className="btn btn-accent">Ver projetos integradores →</Link>
- </main>;
+ </div>;
 }

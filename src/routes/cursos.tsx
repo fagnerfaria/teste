@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { COURSES, FUTURE_TRACKS } from "@/lib/content/courses";
+import { COURSES } from "@/lib/content/courses";
+import { TRACKS } from "@/lib/content/tracks";
 
 export const Route = createFileRoute("/cursos")({
   head: () => ({
@@ -34,18 +35,18 @@ function Cursos() {
             </details>
             <div className="mt-auto flex flex-wrap gap-2 pt-3">
               {c.links.map((l) => <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost text-sm">{l.label} ↗</a>)}
-              {c.adaptedLessons && <Link to="/aulas" className="btn btn-primary text-sm">Estudar aula adaptada no CódigoLab</Link>}
+              {TRACKS.filter(t=>t.sources.includes(c.id)).slice(0,2).map(t=><Link key={t.id} to="/trilhas/$id" params={{id:t.id}} className="btn btn-primary text-sm">Trilha: {t.title.split(" · ")[1]}</Link>)}
             </div>
           </article>
         ))}
       </div>
       <section>
-        <h2 className="mb-2 text-xl font-bold">Trilhas futuras</h2>
+        <h2 className="mb-2 text-xl font-bold">Trilhas internas disponíveis</h2>
         <ul className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-          {FUTURE_TRACKS.map((t) => (
-            <li key={t.title} className="card-surface p-3">
-              <div className="flex justify-between"><span className="font-semibold">{t.title}</span><span className="text-xs text-muted-foreground">{t.status}</span></div>
-              <p className="text-sm text-muted-foreground">{t.note}</p>
+          {TRACKS.map((t) => (
+            <li key={t.id} className="card-surface p-3">
+              <Link to="/trilhas/$id" params={{id:t.id}} className="font-semibold text-primary hover:underline">{t.title}</Link>
+              <p className="text-sm text-muted-foreground">{t.summary}</p>
             </li>
           ))}
         </ul>

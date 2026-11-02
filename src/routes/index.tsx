@@ -41,6 +41,14 @@ function Home() {
         </div>
       </section>
 
+      <section className="card-surface space-y-3 p-4">
+        <h2 className="text-xl font-bold">Do zero aos seus próprios programas e agentes de IA</h2>
+        <p className="text-sm">O percurso ampliado reúne as 12 aulas iniciais, 40 unidades de aprofundamento em cinco trilhas e seis projetos orientados. Os materiais externos continuam como fontes adicionais.</p>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/trilhas" className="btn btn-primary">Explorar seis trilhas →</Link>
+          <Link to="/projetos" className="btn btn-ghost">Ver projetos práticos →</Link>
+        </div>
+      </section>
       <div className="grid gap-4 md:grid-cols-2">
         <section className="card-surface p-4">
           <h2 className="text-lg font-bold">Curso atual</h2>

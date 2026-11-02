@@ -7,7 +7,7 @@ export const Route=createFileRoute("/projetos")({
 });
 function Projetos(){
  const d=useData();
- return <main className="space-y-5">
+ return <div className="space-y-5">
    <header><h1 className="text-3xl font-extrabold">Projetos integradores</h1>
     <p className="mt-2 text-muted-foreground">Seu portfólio começa com projetos pequenos. Cada proposta tem etapas e critérios de aceitação. A conclusão é autodeclarada após revisão dos requisitos; não é uma certificação técnica automática.</p></header>
    <div className="grid gap-4 md:grid-cols-2">
@@ -23,5 +23,5 @@ function Projetos(){
    })}
    </div>
    <Link to="/trilhas" className="btn btn-ghost">← Voltar às trilhas</Link>
- </main>;
+ </div>;
 }

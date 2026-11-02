@@ -81,6 +81,41 @@ try {
     const after=await page.locator(".card-surface strong").first().innerText();
     if(after.trim()!=="1")throw new Error("Importação inválida substituiu o progresso!");
   });
-  if(errors.length)throw new Error("Erros JS no navegador: "+JSON.stringify(errors));
+  await runTest("Seis trilhas e quarenta aulas ampliadas", async()=>{
+    await page.goto(url+"/trilhas",{waitUntil:"domcontentloaded"});
+    await page.getByRole("heading",{name:"Trilhas de estudo"}).waitFor();
+    const cards=await page.getByRole("link",{name:/Abrir trilha/}).count();
+    if(cards!==6)throw new Error("Esperadas 6 trilhas, obtidas "+cards);
+    await page.goto(url+"/trilhas/python-pro",{waitUntil:"domcontentloaded"});
+    await page.getByRole("link",{name:/Compreensões de listas/}).waitFor();
+  });
+  await runTest("Questão de web e progresso persistente", async()=>{
+    await page.goto(url+"/estudar/w-html",{waitUntil:"domcontentloaded"});
+    await page.locator('input[type="radio"]').nth(1).check();
+    await page.getByRole("button",{name:"Conferir resposta"}).click();
+    await page.getByText(/Questão aprovada/).waitFor();
+    await page.getByRole("button",{name:"Marcar aula como concluída"}).click();
+    await page.reload({waitUntil:"domcontentloaded"});
+    await page.getByText("✔ Aula concluída").waitFor();
+  });
+  await runTest("Exercício JavaScript executado e corrigido", async()=>{
+    await page.goto(url+"/estudar/w-js",{waitUntil:"domcontentloaded"});
+    const editor=page.locator(".cm-content").last();
+    await editor.waitFor({timeout:15000});
+    await editor.fill('const produto="Livro"; let quantidade=2; quantidade++; console.log(produto, quantidade);');
+    await page.getByRole("button",{name:/Corrigir \(executa de verdade\)/}).click();
+    await page.getByText(/Todos os casos passaram/).waitFor({timeout:30000});
+  });
+  await runTest("Projetos e checklist funcional", async()=>{
+    await page.goto(url+"/projetos/proj-calculadora",{waitUntil:"domcontentloaded"});
+    await page.getByRole("heading",{name:"Calculadora pessoal de gastos"}).waitFor();
+    const checks=page.locator('input[type="checkbox"]');
+    const count=await checks.count();
+    if(count<4)throw new Error("Checklist de projeto incompleto: "+count);
+    for(let i=0;i<count;i++)await checks.nth(i).check();
+    await page.getByRole("button",{name:"Concluir após minha revisão"}).click();
+    await page.getByText(/Projeto marcado como revisado/).waitFor();
+  });
+    if(errors.length)throw new Error("Erros JS no navegador: "+JSON.stringify(errors));
   console.log("E2E OK; erros de página registrados:",errors);
 }finally{await browser.close();}
