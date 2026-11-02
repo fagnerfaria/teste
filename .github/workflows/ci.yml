@@ -22,9 +22,18 @@ jobs:
         run: |
           bun add -d playwright
           bunx playwright install chromium
-      - name: Smoke test em navegador real (Cloudflare)
-        run: bun scripts/smoke.mjs
+      - name: Smoke test do build candidato em navegador real
+        run: |
+          ./node_modules/.bin/vite preview --host 127.0.0.1 --port 4173 >/tmp/codigolab-vite.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill "$VITE_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          CODIGOLAB_URL=http://127.0.0.1:4173 bun scripts/smoke.mjs
       - name: Prepare static build in isolated branch
+        if: github.ref == 'refs/heads/codigolab'
         run: |
           git config user.name "CodigoLab CI"
           git config user.email "actions@users.noreply.github.com"
