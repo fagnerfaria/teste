@@ -29,5 +29,16 @@ try{
    "A URL do script deve chegar ao CDN sem ser trocada por index.html");
  assert.match(upstreamRequests.at(-1)||"", /@[0-9a-f]{40}\/dist\/assets\/index-TEST\.js$/,
    "O CDN deve apontar para um commit imutável, não para branch com cache antigo");
- console.log("Política HTTP do Worker e assets JS validada");
+ const manifest=await worker.fetch(new Request("https://codigolab.pages.dev/manifest.webmanifest"));
+ assert.equal(manifest.headers.get("content-type"),"application/manifest+json; charset=utf-8",
+   "Manifest PWA não pode voltar como HTML nem texto sem MIME correto");
+ assert.ok(upstreamRequests.at(-1)?.endsWith("/manifest.webmanifest"),
+   "Manifest deve ser buscado como arquivo, não index.html");
+ const svg=await worker.fetch(new Request("https://codigolab.pages.dev/icon.svg"));
+ assert.equal(svg.headers.get("content-type"),"image/svg+xml",
+   "Ícone de instalação deve ter MIME de SVG");
+ const sw=await worker.fetch(new Request("https://codigolab.pages.dev/sw.js"));
+ assert.equal(sw.headers.get("cache-control"),"no-cache, must-revalidate",
+   "Service worker precisa atualizar, não ficar congelado por um ano");
+ console.log("Política HTTP, PWA e assets validada");
 }finally{globalThis.fetch=originalFetch}
