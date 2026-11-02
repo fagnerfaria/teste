@@ -2,6 +2,7 @@
  * Cloudflare Pages Advanced Mode, publicação transitória por CDN.
  * Não altera o interpretador Python/JS. Servir dist nativamente no Pages
  * continua sendo o destino recomendado depois de conectar o GitHub.
+ * CDN fixado no commit verificado: nova versão requer atualizar esta referência.
  */
 const CSP = [
   "default-src 'self'",
@@ -33,7 +34,7 @@ export default {
     }
     const isDocument = path === "/" || !/\.[a-z0-9]{1,8}$/i.test(path);
     const asset = isDocument ? "/index.html" : path;
-    const upstream = "https://cdn.jsdelivr.net/gh/fagnerfaria/teste@codigolab-dist/dist" + asset;
+    const upstream = "https://cdn.jsdelivr.net/gh/fagnerfaria/teste@9b4ee73c017a6fcaf67c8ac1f1a459a8237c6bf2/dist" + asset;
 
     let response;
     try {
