@@ -32,7 +32,7 @@ export default {
     if (path.includes("..") || path.includes("\\") || path.includes("//")) {
       return new Response("Caminho inválido", { status: 400 });
     }
-    const isDocument = path === "/" || !/\.[a-z0-9]{1,8}$/i.test(path);
+    const isDocument = path === "/" || !/\.[a-z0-9]{1,16}$/i.test(path);
     const asset = isDocument ? "/index.html" : path;
     const upstream = "https://cdn.jsdelivr.net/gh/fagnerfaria/teste@6c3eb30fc522baf3dfdd7c4b37b44c776358552b/dist" + asset;
 
@@ -52,8 +52,10 @@ export default {
     else if (asset.endsWith(".css")) headers.set("Content-Type", "text/css; charset=utf-8");
     else if (asset.endsWith(".html")) headers.set("Content-Type", "text/html; charset=utf-8");
     else if (asset.endsWith(".json")) headers.set("Content-Type", "application/json; charset=utf-8");
+    else if (asset.endsWith(".webmanifest")) headers.set("Content-Type", "application/manifest+json; charset=utf-8");
+    else if (asset.endsWith(".svg")) headers.set("Content-Type", "image/svg+xml");
 
-    headers.set("Cache-Control", isDocument
+    headers.set("Cache-Control", isDocument || asset === "/sw.js" || asset.endsWith(".webmanifest")
       ? "no-cache, must-revalidate"
       : "public, max-age=31536000, immutable");
     headers.delete("age");
