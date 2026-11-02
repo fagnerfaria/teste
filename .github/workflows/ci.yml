@@ -37,6 +37,11 @@ jobs:
         env:
           CODIGOLAB_URL: https://95fba17b.codigolab.pages.dev
         run: bun scripts/smoke.mjs
+      - name: Smoke test da produção HTTPS com Chromium
+        if: github.ref == 'refs/heads/codigolab'
+        env:
+          CODIGOLAB_URL: https://codigolab.pages.dev
+        run: bun scripts/smoke.mjs
       - name: Prepare static build in isolated branch
         if: github.ref == 'refs/heads/codigolab'
         run: |
