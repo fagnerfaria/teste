@@ -68,3 +68,13 @@ jobs:
           git add -f dist
           git commit -m "build: candidato de curriculum [skip ci]"
           git push origin HEAD:refs/heads/codigolab-curriculum-dist --force
+
+      - name: Publicar build isolado da biblioteca ampliada
+        if: github.ref == 'refs/heads/codigolab-integracao-20261102'
+        run: |
+          git config user.name "CodigoLab CI"
+          git config user.email "actions@users.noreply.github.com"
+          git switch -C codigolab-integracao-dist
+          git add -f dist
+          git commit -m "build: indexed external library candidate [skip ci]"
+          git push origin HEAD:refs/heads/codigolab-integracao-dist --force
