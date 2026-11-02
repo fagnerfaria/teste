@@ -31,7 +31,7 @@ export default {
     if (path.includes("..") || path.includes("\\") || path.includes("//")) {
       return new Response("Caminho inválido", { status: 400 });
     }
-    const isDocument = path === "/" || !/\\.[a-z0-9]{1,8}$/i.test(path);
+    const isDocument = path === "/" || !/\.[a-z0-9]{1,8}$/i.test(path);
     const asset = isDocument ? "/index.html" : path;
     const upstream = "https://cdn.jsdelivr.net/gh/fagnerfaria/teste@codigolab-dist/dist" + asset;
 
