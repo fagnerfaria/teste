@@ -2,6 +2,8 @@ name: CodigoLab CI
 on:
   push:
     branches: [codigolab]
+permissions:
+  contents: write
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -14,3 +16,11 @@ jobs:
       - run: bun run build
       - run: bun run typecheck
       - run: bun run test --passWithNoTests
+      - name: Prepare static build in isolated branch
+        run: |
+          git config user.name "CodigoLab CI"
+          git config user.email "actions@users.noreply.github.com"
+          git switch -C codigolab-dist
+          git add -f dist
+          git commit -m "build: static files from validated source [skip ci]"
+          git push origin HEAD:refs/heads/codigolab-dist --force
