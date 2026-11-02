@@ -1,28 +1,67 @@
 /**
- * CódigoLab — Cloudflare Pages Advanced Mode
- * Implanta-se como `_worker.js`. Solução provisória sem integração GitHub;
- * lê arquivos estáticos já compilados no branch público codigolab-dist.
- * Recomendação futura: configurar integração GitHub oficial e servir
- * `dist/` diretamente no Pages, eliminando este proxy.
+ * Cloudflare Pages Advanced Mode, publicação transitória por CDN.
+ * Não altera o interpretador Python/JS. Servir dist nativamente no Pages
+ * continua sendo o destino recomendado depois de conectar o GitHub.
  */
+const CSP = [
+  "default-src 'self'",
+  // O sandbox educacional usa Function e Pyodide; não é possível usar
+  // script-src sem unsafe-eval/unsafe-inline sem refatorar os executores.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net",
+  "worker-src 'self' blob:",
+  "connect-src 'self' https://cdn.jsdelivr.net",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob:",
+  "frame-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'self'",
+].join("; ");
+
 export default {
   async fetch(request) {
     const url = new URL(request.url);
-    const path = decodeURIComponent(url.pathname);
-    const asset = path === "/" || !/\.[a-z0-9]{1,8}$/i.test(path) ? "/index.html" : path;
+    let path;
+    try {
+      path = decodeURIComponent(url.pathname);
+    } catch {
+      return new Response("Caminho inválido", { status: 400 });
+    }
+    if (path.includes("..") || path.includes("\\") || path.includes("//")) {
+      return new Response("Caminho inválido", { status: 400 });
+    }
+    const isDocument = path === "/" || !/\\.[a-z0-9]{1,8}$/i.test(path);
+    const asset = isDocument ? "/index.html" : path;
     const upstream = "https://cdn.jsdelivr.net/gh/fagnerfaria/teste@codigolab-dist/dist" + asset;
-    const response = await fetch(upstream, { cf: { cacheTtl: 1800, cacheEverything: true } });
+
+    let response;
+    try {
+      response = await fetch(upstream, {
+        cf: { cacheTtl: isDocument ? 30 : 1800, cacheEverything: true },
+      });
+    } catch {
+      return new Response("Serviço de arquivos temporariamente indisponível", { status: 502 });
+    }
     if (!response.ok) {
-      return new Response("Arquivo indisponível (" + response.status + ")", { status: 502 });
+      return new Response("Arquivo indisponível", { status: response.status === 404 ? 404 : 502 });
     }
     const headers = new Headers(response.headers);
     if (asset.endsWith(".js")) headers.set("Content-Type", "text/javascript; charset=utf-8");
     else if (asset.endsWith(".css")) headers.set("Content-Type", "text/css; charset=utf-8");
     else if (asset.endsWith(".html")) headers.set("Content-Type", "text/html; charset=utf-8");
     else if (asset.endsWith(".json")) headers.set("Content-Type", "application/json; charset=utf-8");
+
+    headers.set("Cache-Control", isDocument
+      ? "no-cache, must-revalidate"
+      : "public, max-age=31536000, immutable");
+    headers.delete("age");
+    headers.delete("etag");
+    headers.delete("set-cookie");
+    headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    headers.set("Content-Security-Policy", CSP);
     headers.set("X-Content-Type-Options", "nosniff");
     headers.set("X-Frame-Options", "DENY");
-    headers.delete("set-cookie");
     return new Response(response.body, { status: 200, headers });
   },
 };
