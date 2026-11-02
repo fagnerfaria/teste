@@ -44,6 +44,11 @@ jobs:
         env:
           CODIGOLAB_URL: https://codigolab.pages.dev
         run: bun scripts/smoke.mjs
+      - name: Testar experiência completa na prévia Cloudflare
+        if: github.ref == 'refs/heads/codigolab-curriculum-20261102'
+        env:
+          CODIGOLAB_URL: https://6f7d56f1.codigolab.pages.dev
+        run: bun scripts/smoke.mjs
       - name: Prepare static build in isolated branch
         if: github.ref == 'refs/heads/codigolab'
         run: |
