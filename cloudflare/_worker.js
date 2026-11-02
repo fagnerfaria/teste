@@ -34,7 +34,7 @@ export default {
     }
     const isDocument = path === "/" || !/\.[a-z0-9]{1,16}$/i.test(path);
     const asset = isDocument ? "/index.html" : path;
-    const upstream = "https://cdn.jsdelivr.net/gh/fagnerfaria/teste@43e5912729e726e7739b4836f4e33490a3495a36/dist" + asset;
+    const upstream = "https://cdn.jsdelivr.net/gh/fagnerfaria/teste@e873036616f2bdb7a2ad7d873fc3ca36ddc5ccd4/dist" + asset;
 
     let response;
     try {
