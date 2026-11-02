@@ -16,6 +16,8 @@ jobs:
       - run: bun run build
       - run: bun run typecheck
       - run: bun run test --passWithNoTests
+      - name: Testar política HTTP do Worker
+        run: bun scripts/worker-security.test.mjs
       - name: Instalar navegador para smoke test
         run: |
           bun add -d playwright
