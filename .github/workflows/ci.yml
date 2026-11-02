@@ -16,6 +16,8 @@ jobs:
       - run: bun run build
       - run: bun run typecheck
       - run: bun run test --passWithNoTests
+      - name: Verificar execução real das soluções didáticas
+        run: bun scripts/verify-curriculum.mjs
       - name: Testar política HTTP do Worker
         run: bun scripts/worker-security.test.mjs
       - name: Instalar navegador para smoke test
@@ -51,3 +53,13 @@ jobs:
           git add -f dist
           git commit -m "build: static files from validated source [skip ci]"
           git push origin HEAD:refs/heads/codigolab-dist --force
+
+      - name: Build de prévia isolado do material expandido
+        if: github.ref == 'refs/heads/codigolab-curriculum-20261102'
+        run: |
+          git config user.name "CodigoLab CI"
+          git config user.email "actions@users.noreply.github.com"
+          git switch -C codigolab-curriculum-dist
+          git add -f dist
+          git commit -m "build: candidato de curriculum [skip ci]"
+          git push origin HEAD:refs/heads/codigolab-curriculum-dist --force
