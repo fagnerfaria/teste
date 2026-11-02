@@ -60,5 +60,27 @@ try {
     const out=await log.innerText();
     if(!out.includes("Olá!"))throw new Error("Sem stdout JS: "+out);
   });
+  await runTest("Backup válido, persistência e rejeição de arquivo corrompido",async()=>{
+    await page.goto(url+"/dados",{waitUntil:"domcontentloaded"});
+    const valid={
+      version:1,completedLessons:{print:1000},passedExercises:{},openedLessons:{},
+      attempts:[],drafts:{},checklist:{},timeoutMs:5000,theme:"light"
+    };
+    page.once("dialog",d=>d.accept());
+    await page.locator('input[type="file"]').setInputFiles({
+      name:"backup-valido.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(valid))
+    });
+    await page.getByRole("status").getByText(/Backup importado com sucesso/).waitFor({timeout:10000});
+    await page.reload({waitUntil:"domcontentloaded"});
+    const before=await page.locator(".card-surface strong").first().innerText();
+    if(before.trim()!=="1")throw new Error("Progresso não persistiu após reload: "+before);
+    await page.locator('input[type="file"]').setInputFiles({
+      name:"backup-invalido.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify({...valid,drafts:null}))
+    });
+    await page.getByRole("status").getByText(/Arquivo inválido/).waitFor({timeout:10000});
+    const after=await page.locator(".card-surface strong").first().innerText();
+    if(after.trim()!=="1")throw new Error("Importação inválida substituiu o progresso!");
+  });
+  if(errors.length)throw new Error("Erros JS no navegador: "+JSON.stringify(errors));
   console.log("E2E OK; erros de página registrados:",errors);
 }finally{await browser.close();}
