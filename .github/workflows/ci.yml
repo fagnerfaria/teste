@@ -99,6 +99,11 @@ jobs:
           git commit -m "build: validated SQL lab candidate [skip ci]"
           git push origin HEAD:refs/heads/codigolab-sql-dist --force
 
+      - name: Testar editor web e regressões na prévia Cloudflare
+        if: github.ref == 'refs/heads/codigolab-web-workspace-20261102'
+        env:
+          CODIGOLAB_URL: https://a94f5cb7.codigolab.pages.dev
+        run: bun scripts/smoke.mjs
       - name: Preparar artefato web de prévia isolada
         if: github.ref == 'refs/heads/codigolab-web-workspace-20261102'
         run: |
