@@ -27,12 +27,14 @@ export function validateWorkspacePath(path:string):string {
  return path;
 }
 const validWorkspace=(v:unknown):v is Workspace=>{
- if(!isPlain(v)||v.version!==1||!["web","python","javascript"].includes(String(v.kind))||typeof v.entry!=="string"||!isPlain(v.files))return false;
- const keys=Object.keys(v.files);if(keys.length<1||keys.length>MAX_FILES||!keys.includes(v.entry))return false;
+ if(!isPlain(v)||v["version"]!==1||!["web","python","javascript"].includes(String(v["kind"]))||typeof v["entry"]!=="string"||!isPlain(v["files"]))return false;
+ const files=v["files"];
+ const entry=v["entry"];
+ const keys=Object.keys(files);if(keys.length<1||keys.length>MAX_FILES||!keys.includes(entry))return false;
  let size=0;
  for(const k of keys){
   try{validateWorkspacePath(k);}catch{return false;}
-  const value=v.files[k];if(typeof value!=="string"||value.length>MAX_FILE_SIZE)return false;
+  const value=files[k];if(typeof value!=="string"||value.length>MAX_FILE_SIZE)return false;
   size+=value.length;
   if(size>MAX_WORKSPACE_SIZE)return false;
  }
