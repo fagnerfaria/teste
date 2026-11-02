@@ -48,7 +48,7 @@ function Lab() {
   const data = useData();
   const [lang, setLang] = useState<LabLang>("python");
   const [exIdx, setExIdx] = useState(0);
-  const [code, setCode] = useState(EXAMPLES.python[0].code);
+  const [code, setCode] = useState(EXAMPLES.python[0]!.code);
   const [stdin, setStdin] = useState("");
   const [mode, setMode] = useState<"run" | "sim">("run");
   const [preview, setPreview] = useState("");
@@ -57,13 +57,13 @@ function Lab() {
 
   useEffect(() => {
     const d = getData().drafts[`lab:${lang}`];
-    setCode(d ?? EXAMPLES[lang][0].code); setExIdx(0); r.setChunks([]);
+    setCode(d ?? EXAMPLES[lang][0]!.code); setExIdx(0); r.setChunks([]);
     if (lang === "python") r.preload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
   const change = (v: string) => { setCode(v); saveDraft(`lab:${lang}`, v); };
-  const loadExample = (i: number) => { setExIdx(i); change(EXAMPLES[lang][i].code); };
+  const loadExample = (i: number) => { setExIdx(i); change(EXAMPLES[lang][i]!.code); };
   const execute = () => {
     if (lang === "html") { setPreview(code); return; }
     r.run(lang, code, { stdin, timeoutMs: data.timeoutMs });
@@ -117,7 +117,7 @@ function Lab() {
             {lang !== "html" && <button className="btn btn-danger" onClick={r.stop} disabled={!r.running}>■ Parar</button>}
             {lang !== "html" && <button className="btn btn-ghost" onClick={() => r.setChunks([])}>Limpar saída</button>}
             {lang === "python" && <button className="btn btn-ghost" onClick={() => { resetPython(); r.setChunks([{ stream: "info", text: "Ambiente Python reiniciado.\n" }]); r.preload(); }}>Reiniciar Python</button>}
-            <button className="btn btn-ghost" onClick={() => change(EXAMPLES[lang][exIdx].code)}>Restaurar exemplo</button>
+            <button className="btn btn-ghost" onClick={() => change(EXAMPLES[lang][exIdx]!.code)}>Restaurar exemplo</button>
             <button className="btn btn-ghost" onClick={async () => { try { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* sem permissão */ } }}>{copied ? "Copiado!" : "Copiar código"}</button>
           </div>
 

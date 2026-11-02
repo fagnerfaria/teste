@@ -2,11 +2,11 @@ import { useState } from "react";
 import { SIMULATIONS } from "@/lib/content/simulations";
 
 export function Simulator({ onLoadCode }: { onLoadCode?: (code: string) => void }) {
-  const [simId, setSimId] = useState(SIMULATIONS[0].id);
+  const [simId, setSimId] = useState(SIMULATIONS[0]!.id);
   const [step, setStep] = useState(0);
   const sim = SIMULATIONS.find((s) => s.id === simId)!;
-  const s = sim.steps[step];
-  const prev = step > 0 ? sim.steps[step - 1].vars : {};
+  const s = sim.steps[step]!;
+  const prev = step > 0 ? sim.steps[step - 1]?.vars ?? {} : {};
   return (
     <div className="space-y-3">
       <p className="rounded-md bg-muted p-2 text-sm text-muted-foreground">

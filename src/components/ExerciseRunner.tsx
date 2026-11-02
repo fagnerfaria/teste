@@ -50,7 +50,7 @@ export function ExerciseRunner({ ex }: { ex: Exercise }) {
       <p className="text-xs text-muted-foreground">Rascunho salvo automaticamente neste dispositivo.</p>
       <div className="flex flex-wrap gap-2">
         <button className="btn btn-primary" disabled={checking || r.running} onClick={check}>{checking ? "Corrigindo…" : "✓ Corrigir (executa de verdade)"}</button>
-        <button className="btn btn-ghost" disabled={checking || r.running} onClick={() => r.run("python", code, { stdin: ex.tests[0].stdin, timeoutMs: data.timeoutMs })}>▶ Só executar</button>
+        <button className="btn btn-ghost" disabled={checking || r.running} onClick={() => r.run("python", code, { stdin: ex.tests[0]?.stdin, timeoutMs: data.timeoutMs })}>▶ Só executar</button>
         {(checking || r.running) && <button className="btn btn-danger" onClick={r.stop}>■ Parar</button>}
         <button className="btn btn-ghost" onClick={() => setShowHint(!showHint)}>💡 Dica</button>
         <button className="btn btn-ghost" onClick={() => change(ex.starter)}>Reiniciar código</button>
@@ -101,7 +101,7 @@ function diffNote(exp: string, got: string) {
     if (e[i] !== g[i]) {
       if (g[i] === undefined) return `Faltou a linha ${i + 1}: "${e[i]}".`;
       if (e[i] === undefined) return `Linha extra ${i + 1}: "${g[i]}".`;
-      if (e[i].toLowerCase() === g[i].toLowerCase()) return `Linha ${i + 1}: diferença só de maiúsculas/minúsculas.`;
+      if (e[i]!.toLowerCase() === g[i]!.toLowerCase()) return `Linha ${i + 1}: diferença só de maiúsculas/minúsculas.`;
       return `Primeira diferença na linha ${i + 1}: esperado "${e[i]}", obtido "${g[i]}".`;
     }
   }
