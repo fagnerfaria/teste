@@ -11,7 +11,14 @@ export const Route=createFileRoute("/git")({
 });
 
 type GitModule=typeof import("isomorphic-git");
-type BrowserFS=InstanceType<typeof import("@isomorphic-git/lightning-fs").default>;
+type BrowserFS = Parameters<GitModule["init"]>[0]["fs"] & {
+ promises: {
+  mkdir(path:string):Promise<unknown>;
+  stat(path:string):Promise<unknown>;
+  readFile(path:string,encoding:string):Promise<string|Uint8Array>;
+  writeFile(path:string,value:string,encoding:string):Promise<void>;
+ };
+};
 type Context={git:GitModule;fs:BrowserFS};
 const DIR="/tutorial";
 const FILE="README.md";
@@ -45,7 +52,7 @@ function GitLab(){
   setBranch(ref??"main");
   setBranches(listed);
   setStatus(stat);
-  setHistory(commits.map(c=>({oid:c.oid,message:c.commit.message,author:c.commit.author.name})));
+  setHistory(commits.map((c: {oid:string;commit:{message:string;author:{name:string}}})=>({oid:c.oid,message:c.commit.message,author:c.commit.author.name})));
  };
 
  useEffect(()=>{
@@ -55,7 +62,7 @@ function GitLab(){
     const [{default: LightningFS},git]=await Promise.all([
      import("@isomorphic-git/lightning-fs"),import("isomorphic-git"),
     ]);
-    const fs=new LightningFS("codigolab-git-tutorial-v1");
+    const fs=new LightningFS("codigolab-git-tutorial-v1") as unknown as BrowserFS;
     const ctx={fs,git};
     context.current=ctx;
     try{await fs.promises.mkdir(DIR);}catch{/* Diretório já existe */}
