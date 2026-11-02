@@ -3,6 +3,7 @@ import { trackById, unitsForTrack } from "@/lib/content/tracks";
 import { LESSONS } from "@/lib/content/lessons";
 import { COURSES } from "@/lib/content/courses";
 import { useData } from "@/lib/store";
+import { recommendedExternal, buildSourceUrl, EXTERNAL_SOURCES } from "@/lib/content/external-library";
 export const Route=createFileRoute("/trilhas/$id")({
  loader:({params})=>{if(!trackById(params.id))throw notFound();return {}},
  component:TrackPage,
@@ -30,6 +31,17 @@ function TrackPage(){
     <h2 className="font-bold">Materiais externos relacionados</h2>
     <p className="text-sm text-muted-foreground">Explore o currículo original dos autores para aprofundar o assunto. O CódigoLab oferece uma sequência própria, não uma cópia integral.</p>
     {COURSES.filter(c=>track.sources.includes(c.id)).map(c=><p key={c.id} className="text-sm"><a href={c.links[0]?.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary underline">{c.title} ↗</a></p>)}
+    <h3 className="pt-3 text-sm font-bold">Referências por tema nesta trilha</h3>
+    <p className="text-xs text-muted-foreground">Sugestões por palavras-chave do título, sem afirmar equivalência ou conclusão automática do conteúdo de terceiros.</p>
+    <ul className="grid gap-2 md:grid-cols-2">
+      {recommendedExternal(id, 12).map(item => (
+       <li key={item.sourceId+":"+item.path} className="rounded-lg border p-2">
+        <a className="text-sm font-semibold text-primary underline" href={buildSourceUrl(item.sourceId,item.path,item.kind)} target="_blank" rel="noopener noreferrer">{item.title} ↗</a>
+        <p className="mt-1 text-xs text-muted-foreground">{EXTERNAL_SOURCES.find(source=>source.id===item.sourceId)?.name}</p>
+       </li>
+      ))}
+    </ul>
+    <Link to="/biblioteca" className="btn btn-ghost text-sm">Pesquisar todas as referências →</Link>
    </section>
    <Link to="/projetos" className="btn btn-ghost">Praticar com projetos →</Link>
  </div>;
