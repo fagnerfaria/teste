@@ -98,3 +98,13 @@ jobs:
           git add -f dist
           git commit -m "build: validated SQL lab candidate [skip ci]"
           git push origin HEAD:refs/heads/codigolab-sql-dist --force
+
+      - name: Preparar artefato web de prévia isolada
+        if: github.ref == 'refs/heads/codigolab-web-workspace-20261102'
+        run: |
+          git config user.name "CodigoLab CI"
+          git config user.email "actions@users.noreply.github.com"
+          git switch -C codigolab-web-workspace-dist
+          git add -f dist
+          git commit -m "build: validated responsive workspace candidate [skip ci]"
+          git push origin HEAD:refs/heads/codigolab-web-workspace-dist --force
