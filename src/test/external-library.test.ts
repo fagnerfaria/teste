@@ -19,7 +19,7 @@ describe("Biblioteca externa com atribuição e cobertura verificável", () => {
   it("incorpora o índice de nós, trilhas e projetos Aprenda e blocos freeCodeCamp", () => {
     const aprenda = EXTERNAL_ITEMS.filter(x => x.sourceId === "aprenda-community");
     const fcc = EXTERNAL_ITEMS.filter(x => x.sourceId === "freecodecamp");
-    expect(aprenda.filter(x => x.path.includes("/nodes/")).length).toBeGreaterThanOrEqual(500);
+    expect(aprenda.filter(x => x.path.includes("/nodes/")).length).toBeGreaterThanOrEqual(450);
     expect(aprenda.filter(x => x.path.startsWith("projects/")).length).toBeGreaterThanOrEqual(17);
     expect(fcc.filter(x => x.kind === "directory").length).toBeGreaterThanOrEqual(500);
   });

@@ -18,6 +18,7 @@ function Cursos() {
   return (
     <div className="space-y-5">
       <h1 className="text-3xl font-extrabold">Cursos</h1>
+      <Link to="/biblioteca" className="btn btn-primary inline-flex mt-2">Explorar os 1.764 materiais oficiais indexados →</Link>
       <p className="text-sm text-muted-foreground">Materiais gratuitos de terceiros. O CódigoLab não tem parceria com esses projetos nem emite certificados; as aulas adaptadas aqui são explicações originais do app.</p>
       <div className="grid gap-4 md:grid-cols-2">
         {COURSES.map((c) => (
@@ -30,7 +31,7 @@ function Cursos() {
             </div>
             <p className="mt-2 text-sm">{c.description}</p>
             <details className="mt-2 text-sm">
-              <summary className="cursor-pointer font-semibold">Módulos iniciais</summary>
+              <summary className="cursor-pointer font-semibold">Panorama dos módulos</summary>
               <ul className="ml-5 list-disc">{c.modules.map((m) => <li key={m}>{m}</li>)}</ul>
             </details>
             <div className="mt-auto flex flex-wrap gap-2 pt-3">
