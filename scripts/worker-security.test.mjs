@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
 import worker from "../cloudflare/_worker.js";
 const originalFetch=globalThis.fetch;
-globalThis.fetch=async()=>new Response("<h1>Teste</h1>",{
-  status:200,headers:{"content-type":"text/html; charset=utf-8",
-    "cache-control":"public, max-age=604800",age:"3000"}
-});
+const upstreamRequests=[];
+globalThis.fetch=async(url)=>{
+ upstreamRequests.push(String(url));
+ const js=String(url).endsWith("/assets/index-TEST.js");
+ return new Response(js?"export const ready = true;":"<h1>Teste</h1>",{
+   status:200,headers:{"content-type":js?"text/javascript":"text/html; charset=utf-8",
+     "cache-control":"public, max-age=604800",age:"3000"}
+ });
+};
 try{
  const response=await worker.fetch(new Request("https://codigolab.pages.dev/lab"));
  assert.equal(response.status,200);
@@ -15,5 +20,12 @@ try{
  assert.ok(response.headers.get("content-security-policy"),
   "A página precisa declarar política CSP");
  assert.equal(response.headers.get("age"),null,"Não copiar idade de cache do CDN");
- console.log("Política HTTP do Worker validada");
+ const js=await worker.fetch(new Request("https://codigolab.pages.dev/assets/index-TEST.js"));
+ assert.equal(js.headers.get("content-type"),"text/javascript; charset=utf-8",
+   "Um arquivo .js deve ser servido como JavaScript e nunca HTML");
+ assert.equal(await js.text(),"export const ready = true;",
+   "O Worker precisa retornar o conteúdo do arquivo original");
+ assert.ok(upstreamRequests.at(-1)?.endsWith("/assets/index-TEST.js"),
+   "A URL do script deve chegar ao CDN sem ser trocada por index.html");
+ console.log("Política HTTP do Worker e assets JS validada");
 }finally{globalThis.fetch=originalFetch}
