@@ -1,5 +1,6 @@
 export type TestCase = { stdin?: string; expected: string; label?: string };
 export type Exercise = {
+  lang?: "python" | "javascript";
   id: string; title: string; level: 1 | 2 | 3; prompt: string; starter: string;
   tests: TestCase[]; hint: string; solution: string; solutionNotes: string; lessonId?: string;
 };

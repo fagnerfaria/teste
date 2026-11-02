@@ -27,7 +27,7 @@ export function ExerciseRunner({ ex }: { ex: Exercise }) {
     setChecking(true); setResults(null);
     const out: CaseResult[] = [];
     for (const [i, t] of ex.tests.entries()) {
-      const res = await runCode("python", code, { stdin: t.stdin, timeoutMs: data.timeoutMs });
+      const res = await runCode(ex.lang ?? "python", code, { stdin: t.stdin, timeoutMs: data.timeoutMs });
       const got = normalizeOutput(res.stdout), expected = normalizeOutput(t.expected);
       out.push({ label: t.stdin ? `Caso ${i + 1} (entrada: ${t.stdin.replace(/\n/g, " ⏎ ")})` : `Caso ${i + 1}`, ok: res.status === "ok" && got === expected, expected, got, stderr: res.stderr, status: res.status });
       if (res.status === "unavailable") break;
@@ -46,11 +46,11 @@ export function ExerciseRunner({ ex }: { ex: Exercise }) {
         <PyStatusBadge />
       </div>
       <p>{ex.prompt}</p>
-      <CodeEditor value={code} onChange={change} lang="python" label={`Código do exercício ${ex.title}`} minHeight={160} />
+      <CodeEditor value={code} onChange={change} lang={ex.lang ?? "python"} label={`Código do exercício ${ex.title}`} minHeight={160} />
       <p className="text-xs text-muted-foreground">Rascunho salvo automaticamente neste dispositivo.</p>
       <div className="flex flex-wrap gap-2">
         <button className="btn btn-primary" disabled={checking || r.running} onClick={check}>{checking ? "Corrigindo…" : "✓ Corrigir (executa de verdade)"}</button>
-        <button className="btn btn-ghost" disabled={checking || r.running} onClick={() => r.run("python", code, { stdin: ex.tests[0]?.stdin, timeoutMs: data.timeoutMs })}>▶ Só executar</button>
+        <button className="btn btn-ghost" disabled={checking || r.running} onClick={() => r.run(ex.lang ?? "python", code, { stdin: ex.tests[0]?.stdin, timeoutMs: data.timeoutMs })}>▶ Só executar</button>
         {(checking || r.running) && <button className="btn btn-danger" onClick={r.stop}>■ Parar</button>}
         <button className="btn btn-ghost" onClick={() => setShowHint(!showHint)}>💡 Dica</button>
         <button className="btn btn-ghost" onClick={() => change(ex.starter)}>Reiniciar código</button>
@@ -63,7 +63,7 @@ export function ExerciseRunner({ ex }: { ex: Exercise }) {
           {results.map((c, i) => (
             <details key={i} open={!c.ok} className="rounded bg-card p-2 text-sm">
               <summary className="cursor-pointer font-semibold">{c.ok ? "✔" : "✖"} {c.label}</summary>
-              {c.status === "unavailable" && <p className="text-destructive">Python indisponível — não foi possível corrigir.</p>}
+              {c.status === "unavailable" && <p className="text-destructive">Executor indisponível — não foi possível corrigir.</p>}
               {c.status === "timeout" && <p className="text-destructive">Tempo limite: talvez um laço infinito ou input() a mais.</p>}
               {!c.ok && c.status !== "unavailable" && (
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
