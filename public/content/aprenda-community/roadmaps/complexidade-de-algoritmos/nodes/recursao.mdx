@@ -1,0 +1,117 @@
+---
+id: recursao
+title: "Recursão: Como Analisar"
+resources:
+  - title: "Thinking Recursively (Python docs)"
+    url: https://docs.python.org/3/tutorial/controlflow.html#defining-functions
+    type: doc
+    lang: en
+    free: true
+  - title: "Memoization (artigo interativo)"
+    url: https://www.freecodecamp.org/news/memoization-in-javascript-and-react/
+    type: artigo
+    lang: en
+    free: true
+---
+
+Recursão é quando uma função **chama ela mesma** com uma entrada menor. É
+elegante e assustadora na mesma medida - principalmente quando você precisa
+dizer quanto custa.
+
+A análise tem duas peças: **tempo** (quantas chamadas) e **espaço** (quanto
+a pilha de chamadas cresce).
+
+### Exemplo 1 - fatorial: linear em tudo
+
+```python
+def fatorial(n):
+    if n <= 1:
+        return 1
+    return n * fatorial(n-1)
+```
+
+- A função chama ela mesma **n vezes** antes de chegar no caso base.
+- **Tempo: O(n).**
+- **Espaço: O(n)** (a pilha guarda n chamadas antes de "voltar").
+
+### Exemplo 2 - Fibonacci ingênuo: exponencial
+
+```python
+def fib(n):
+    if n < 2: return n
+    return fib(n-1) + fib(n-2)
+```
+
+Aqui cada chamada gera **duas novas**, que geram duas cada, que geram duas
+cada… o número de chamadas cresce como uma árvore binária de profundidade n.
+
+Para `n = 30` já passa de 1 milhão de chamadas. **Tempo: O(2ⁿ).** Péssimo.
+
+### Como visualizar: a árvore de chamadas
+
+Desenhe a árvore. **Cada nó é uma chamada**, cada nível é uma "fase" da
+recursão. O total de chamadas é a soma de todos os nós.
+
+```
+fib(4)
+├── fib(3)
+│   ├── fib(2)
+│   │   ├── fib(1)
+│   │   └── fib(0)
+│   └── fib(1)
+└── fib(2)
+    ├── fib(1)
+    └── fib(0)
+```
+
+Repare que **`fib(2)` é calculado duas vezes**, `fib(1)` três vezes. A
+recursão está **refazendo o mesmo trabalho** várias vezes. Aí entra…
+
+### Memoização: O(2ⁿ) → O(n)
+
+```python
+from functools import lru_cache
+
+@lru_cache
+def fib(n):
+    if n < 2: return n
+    return fib(n-1) + fib(n-2)
+```
+
+O decorador guarda o resultado de cada `fib(k)` na primeira vez. Da segunda
+em diante, devolve do cache em O(1). O número de chamadas "únicas" cai de
+2ⁿ para **n**. **Tempo: O(n). Espaço: O(n).**
+
+### A relação de recorrência
+
+Para algoritmos divide-and-conquer (merge sort, binary search), a análise
+segue um padrão: **`T(n) = a · T(n/b) + f(n)`**.
+
+- **`a`** = quantas chamadas recursivas.
+- **`b`** = por quanto o input é dividido.
+- **`f(n)`** = trabalho **fora** das chamadas.
+
+Merge sort: `T(n) = 2·T(n/2) + O(n)` → resolve para **O(n log n).**
+Binary search: `T(n) = T(n/2) + O(1)` → resolve para **O(log n).**
+
+Você não precisa decorar a fórmula - mas reconhecer o padrão ajuda a
+"ler" algoritmos clássicos.
+
+- **Conte as chamadas** que a recursão gera.
+- **Memoize** se a mesma entrada for calculada mais de uma vez.
+- **Espaço = profundidade** da pilha de chamadas.
+
+> Dica: se a recursão está ficando lenta, quase sempre é ou (a) trabalho
+> repetido que memoization resolve, ou (b) chamadas demais por nível que
+> uma versão iterativa resolve com um loop.
+
+A seguir: como **estruturas de dados** mudam completamente a complexidade -
+o mesmo problema fica O(n) ou O(n²) dependendo do que você escolhe.
+
+<Checkpoint
+  challenge="Escreva fatorial(n) recursivo e imprima fatorial(5)."
+  starterCode={`function fatorial(n) {\n  // caso base + chamada recursiva\n}\nconsole.log(fatorial(5));`}
+  expected="120"
+  slug="complexidade-de-algoritmos"
+  nodeId="recursao"
+/>

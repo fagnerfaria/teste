@@ -1,0 +1,60 @@
+---
+id: contando-operacoes
+title: "Contando Operações"
+resources:
+  - title: "Análise de Algoritmos (curso de Paulo Feofiloff, IME-USP)"
+    url: https://www.ime.usp.br/~pf/analise_de_algoritmos/
+    type: doc
+    lang: pt
+    free: true
+  - title: "Big O Notation - CS50 (vídeo, legenda PT-BR disponível)"
+    url: https://www.youtube.com/watch?v=IM9sHGlJHoo
+    type: video
+    lang: en
+    free: true
+---
+
+Medir tempo em segundos é instável: depende do processador, do que mais está
+rodando, da linguagem. O que **não muda** é a **quantidade de trabalho** que
+o algoritmo faz. Por isso a gente conta **operações**.
+
+Imagine esta função que soma todos os números de 1 a N:
+
+```python
+def soma(n):
+    total = 0              # 1 operação
+    for i in range(1, n+1):  # o loop roda n vezes
+        total += i         # 2 operações por volta (adição + atribuição)
+    return total
+```
+
+Quantas operações, no total? Algo como `1 + n * 2`. Para `n = 10`, dá 21.
+Para `n = 1.000.000`, dá 2.000.001.
+
+Agora um algoritmo que faz a mesma soma sem loop:
+
+```python
+def soma(n):
+    return n * (n + 1) // 2   # 3 operações, sempre
+```
+
+Esse segundo é `3`, não importa o tamanho de `n`. Os dois retornam o mesmo
+valor, mas o primeiro **cresce** com `n` e o segundo **não**.
+
+A sacada é: para descrever a velocidade, **não importa o número exato de
+operações**, só como ele **cresce** quando `n` cresce. `1 + 2n` e `5n` e
+`42n + 1000` se comportam do mesmo jeito - todos são "lineares em n". O
+detalhe numérico some quando `n` vira grande.
+
+- **Conte operações, não segundos.** Hardware muda, estrutura não.
+- **Foque em como o trabalho escala** com o tamanho da entrada, não no
+  valor exato.
+- Constantes e termos menores somem na análise: `5n + 100` é "linear" igual
+  a `n + 1`.
+
+> Dica: na hora de contar, **ignore constantes**. `2n` e `100n` são a mesma
+> classe - "linear". O que importa é se a operação cresce com `n`, com `n²`,
+> com `log n`… e isso é exatamente o que a notação Big O te diz.
+
+No próximo nó, vamos formalizar: **Big O** é o nome dessa notação que diz
+"como o trabalho escala".

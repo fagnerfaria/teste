@@ -1,0 +1,106 @@
+{
+  "slug": "complexidade-de-algoritmos",
+  "title": "Complexidade de Algoritmos",
+  "description": "Aprenda a medir e comparar o custo de algoritmos: Big O, melhor/pior caso, espaço, recursão, padrões clássicos (busca binária, dois ponteiros, sliding window) e como ler código alheio sem se perder.",
+  "difficulty": "intermediario",
+  "skills": ["algoritmos", "big-o", "estruturas-de-dados", "recursao", "logica"],
+  "creators": [
+    {
+      "name": "Luciano dii Souza",
+      "github": "lucianodiisouza"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "por-que-medir",
+      "title": "Por Que Medir Eficiência",
+      "type": "topic",
+      "recommended": true,
+      "children": ["contando-operacoes"]
+    },
+    {
+      "id": "contando-operacoes",
+      "title": "Contando Operações",
+      "type": "subtopic",
+      "recommended": true,
+      "children": ["big-o"]
+    },
+    {
+      "id": "big-o",
+      "title": "Big O: A Notação que Importa",
+      "type": "subtopic",
+      "recommended": true,
+      "children": ["classes-comuns"]
+    },
+    {
+      "id": "classes-comuns",
+      "title": "As Classes que Você Vai Ver Todo Dia",
+      "type": "subtopic",
+      "recommended": true,
+      "children": ["casos"]
+    },
+    {
+      "id": "casos",
+      "title": "Melhor, Médio e Pior Caso",
+      "type": "subtopic",
+      "recommended": true,
+      "children": ["espaco"]
+    },
+    {
+      "id": "espaco",
+      "title": "Complexidade de Espaço",
+      "type": "subtopic",
+      "recommended": true,
+      "children": ["loops-condicionais"]
+    },
+    {
+      "id": "loops-condicionais",
+      "title": "Analisando Loops e Condicionais",
+      "type": "subtopic",
+      "recommended": true,
+      "children": ["recursao"]
+    },
+    {
+      "id": "recursao",
+      "title": "Recursão: Como Analisar",
+      "type": "subtopic",
+      "recommended": true,
+      "children": ["estruturas-de-dados"]
+    },
+    {
+      "id": "estruturas-de-dados",
+      "title": "Estruturas de Dados Mudam Tudo",
+      "type": "subtopic",
+      "recommended": true,
+      "children": ["padroes-classicos"]
+    },
+    {
+      "id": "padroes-classicos",
+      "title": "Padrões Clássicos: Dois Ponteiros, Sliding Window, D&C",
+      "type": "subtopic",
+      "recommended": true,
+      "children": ["busca-binaria"]
+    },
+    {
+      "id": "busca-binaria",
+      "title": "Busca Binária na Vida Real",
+      "type": "subtopic",
+      "recommended": true,
+      "children": ["na-pratica"]
+    },
+    {
+      "id": "na-pratica",
+      "title": "Na Prática: Quando Big O Mente",
+      "type": "subtopic",
+      "recommended": true,
+      "children": ["projeto-final"]
+    },
+    {
+      "id": "projeto-final",
+      "title": "Projeto Final: Comparando Implementações",
+      "type": "milestone",
+      "recommended": true,
+      "children": []
+    }
+  ]
+}

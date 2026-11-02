@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { getData, replaceAll, resetAll, useData, validateBackup } from "@/lib/store";
+import { ProgressSync } from "@/components/ProgressSync";
 
 export const Route = createFileRoute("/dados")({
   head: () => ({
@@ -29,18 +30,22 @@ function Dados() {
     setMsg("Backup exportado.");
   };
   const importar = async (f: File) => {
+    let json: unknown;
     try {
-      const json = JSON.parse(await f.text());
+      if (f.size > 8 * 1024 * 1024) throw new Error();
+      json = JSON.parse(await f.text());
       if (!validateBackup(json)) throw new Error();
-      if (confirm("Substituir os dados atuais pelo backup?")) { replaceAll(json); setMsg("Backup importado com sucesso."); }
-    } catch { setMsg("Arquivo inválido: não é um backup do CódigoLab."); }
+    } catch { setMsg("Arquivo inválido: não é um backup do CódigoLab ou excede o limite de 8 MiB."); return; }
+    if (!confirm("Substituir os dados atuais pelo backup?")) return;
+    try { replaceAll(json); setMsg("Backup importado com sucesso. Dados salvos neste navegador."); }
+    catch (error) { setMsg(error instanceof Error ? error.message : "Não foi possível salvar o backup. O progresso local foi preservado."); }
   };
 
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-extrabold">Meus dados</h1>
       <p className="rounded-md border-l-4 border-warning bg-warning/10 p-3 text-sm">
-        Tudo fica salvo apenas neste navegador (localStorage). <strong>Não há sincronização entre dispositivos</strong> nem conta. Limpar os dados do navegador apaga seu progresso — exporte backups regularmente.
+        Seu progresso fica salvo neste navegador (localStorage). A sincronização privada abaixo é opcional e exige enviar e baixar os dados. Limpar os dados do navegador apaga sua cópia local; exporte backups regularmente.
       </p>
       <div className="card-surface grid grid-cols-2 gap-2 p-4 text-sm sm:grid-cols-4">
         <div><strong className="text-xl">{Object.keys(d.completedLessons).length}</strong><br />aulas concluídas</div>
@@ -52,10 +57,14 @@ function Dados() {
         <button className="btn btn-primary" onClick={exportar}>Exportar backup (JSON)</button>
         <button className="btn btn-ghost" onClick={() => file.current?.click()}>Importar backup</button>
         <input ref={file} type="file" accept="application/json,.json" className="hidden" aria-label="Arquivo de backup" onChange={(e) => { const f = e.target.files?.[0]; if (f) importar(f); e.target.value = ""; }} />
-        <button className="btn btn-danger" onClick={() => { if (confirm("Apagar TODO o progresso, rascunhos e histórico? Isso não pode ser desfeito.")) { resetAll(); setMsg("Dados apagados."); } }}>Apagar todos os dados</button>
+        <button className="btn btn-danger" onClick={() => {
+          if (!confirm("Apagar o progresso, rascunhos e histórico de tentativas deste navegador? Isso não pode ser desfeito. O histórico Git e os bancos dos laboratórios têm controles próprios.")) return;
+          try { resetAll(); setMsg("Progresso e rascunhos locais apagados."); }
+          catch (error) { setMsg(error instanceof Error ? error.message : "Não foi possível apagar os dados locais."); }
+        }}>Apagar progresso e rascunhos</button>
       </div>
       {msg && <p role="status" className="text-sm font-semibold">{msg}</p>}
-      <p className="text-xs text-muted-foreground">Evolução futura possível: login opcional e sincronização na nuvem. Não é necessário para usar o app.</p>
+      <ProgressSync />
     </div>
   );
 }

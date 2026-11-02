@@ -51,7 +51,7 @@ function Estudar(){
          recordAttempt(examId,selected===u.challenge.correctIndex);
          setChecked(true);
        }}>Conferir resposta</button>
-       {checked&&<p role="status" className={"rounded p-2 text-sm "+(passed?"bg-success/10":"bg-warning/10")}>{selected===u.challenge.correctIndex?"Correto. ":"Revise e tente novamente. "}{u.challenge.explanation}</p>}
+       {checked&&<p role="status" className={"rounded p-2 text-sm "+(selected===u.challenge.correctIndex?"bg-success/10":"bg-warning/10")}>{selected===u.challenge.correctIndex?"Correto. ":"Revise e tente novamente. "}{u.challenge.explanation}</p>}
        {passed&&<p className="text-sm font-bold text-success">✔ Questão aprovada.</p>}
      </div> : null}
    </section>

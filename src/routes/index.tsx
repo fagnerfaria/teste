@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { TRACKS, UNITS, PROJECTS } from "@/lib/content/tracks";
+import { SNAPSHOT_DOCUMENTS } from "@/lib/content/snapshot-index";
 import { useData } from "@/lib/store";
 import { LESSONS, lessonById } from "@/lib/content/lessons";
 import { EXERCISES, exerciseById } from "@/lib/content/exercises";
@@ -44,7 +46,7 @@ function Home() {
 
       <section className="card-surface space-y-3 p-4">
         <h2 className="text-xl font-bold">Do zero aos seus próprios programas e agentes de IA</h2>
-        <p className="text-sm">O percurso ampliado reúne as 12 aulas iniciais, 40 unidades de aprofundamento em cinco trilhas e seis projetos orientados. Os materiais externos continuam como fontes adicionais.</p>
+        <p className="text-sm">O percurso reúne {LESSONS.length} aulas iniciais, {UNITS.length} unidades de aprofundamento em {TRACKS.length} trilhas, {PROJECTS.length} projetos orientados e {SNAPSHOT_DOCUMENTS.length} documentos incorporados com autoria e licença.</p>
         <div className="flex flex-wrap gap-2">
           <Link to="/trilhas" className="btn btn-primary">Explorar seis trilhas →</Link>
           <Link to="/projetos" className="btn btn-ghost">Ver projetos práticos →</Link>

@@ -30,3 +30,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Reproducible build assets
+public/vendor/
+public/_worker.js
+public/health.json
+src/routeTree.gen.ts
+public/sw-build.js

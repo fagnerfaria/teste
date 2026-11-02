@@ -1,9 +1,10 @@
+import { LESSON_DEPTH } from "./lesson-depth";
 export type Lesson = {
   id: string; title: string; week: number; objectives: string[]; explanation: string[];
   examples: { title: string; code: string }[]; exerciseId: string; tip: string;
 };
 
-export const LESSONS: Lesson[] = [
+const BASE_LESSONS: Lesson[] = [
   { id: "programa", week: 1, title: "O que é um programa?",
     objectives: ["Entender que um programa é uma lista de instruções", "Executar seu primeiro código"],
     explanation: [
@@ -119,3 +120,4 @@ export const LESSONS: Lesson[] = [
 ];
 
 export const lessonById = (id: string) => LESSONS.find((l) => l.id === id);
+export const LESSONS:Lesson[]=BASE_LESSONS.map(lesson=>({...lesson,explanation:[...lesson.explanation,...(LESSON_DEPTH[lesson.id]||[])]}));

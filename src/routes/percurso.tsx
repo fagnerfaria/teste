@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LESSONS } from "@/lib/content/lessons";
 import { update, useData } from "@/lib/store";
+import { LearningDashboard } from "@/components/LearningDashboard";
 
 const WEEKS = [
   { n: 1, goal: "Entender o que é programar e usar print()", tasks: ["Instalei nada: só abri o laboratório e rodei Olá mundo", "Modifiquei um exemplo e previ a saída antes de executar"] },
@@ -30,6 +31,8 @@ function Percurso() {
   return (
     <div className="space-y-5">
       <h1 className="text-3xl font-extrabold">Meu percurso</h1>
+      <LearningDashboard />
+      <h2 className="text-xl font-bold">Roteiro inicial de oito semanas</h2>
       <p className="text-muted-foreground">Uma ordem didática sugerida para 8 semanas. Ninguém domina programação automaticamente em 8 semanas — o objetivo é construir uma base sólida com prática constante.</p>
       <div className="card-surface grid grid-cols-3 gap-2 p-3 text-center text-sm">
         <div><div className="text-2xl font-extrabold text-primary">15 min</div>aula</div>

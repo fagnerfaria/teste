@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { COURSES } from "@/lib/content/courses";
+import { EXTERNAL_ITEMS } from "@/lib/content/external-library";
+import { SNAPSHOT_DOCUMENTS } from "@/lib/content/snapshot-index";
 import { TRACKS } from "@/lib/content/tracks";
 
 export const Route = createFileRoute("/cursos")({
@@ -18,8 +20,8 @@ function Cursos() {
   return (
     <div className="space-y-5">
       <h1 className="text-3xl font-extrabold">Cursos</h1>
-      <Link to="/biblioteca" className="btn btn-primary inline-flex mt-2">Explorar os 1.764 materiais oficiais indexados →</Link>
-      <p className="text-sm text-muted-foreground">Materiais gratuitos de terceiros. O CódigoLab não tem parceria com esses projetos nem emite certificados; as aulas adaptadas aqui são explicações originais do app.</p>
+      <Link to="/biblioteca" className="btn btn-primary inline-flex mt-2">Explorar {EXTERNAL_ITEMS.length.toLocaleString("pt-BR")} referências e {SNAPSHOT_DOCUMENTS.length} documentos incorporados →</Link>
+      <p className="text-sm text-muted-foreground">Materiais gratuitos de terceiros. O CódigoLab não tem parceria com esses projetos nem emite certificados; os documentos incorporados preservam autoria e licença, e as aulas próprias são autorais.</p>
       <div className="grid gap-4 md:grid-cols-2">
         {COURSES.map((c) => (
           <article key={c.id} className="card-surface flex flex-col p-4">

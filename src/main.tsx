@@ -9,6 +9,6 @@ createRoot(el).render(<React.StrictMode><RouterProvider router={getRouter()} /><
 // Instalação opcional no Android, com cache do shell local.
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    navigator.serviceWorker.register("/sw-build.js").catch(() => {});
   });
 }

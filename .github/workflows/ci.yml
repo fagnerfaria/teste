@@ -1,130 +1,53 @@
 name: CodigoLab CI
 on:
   push:
-    branches: [codigolab, codigolab-audit-20261102, codigolab-curriculum-20261102, codigolab-integracao-20261102, codigolab-sql-20261102, codigolab-web-workspace-20261102, codigolab-git-lab-20261102]
+    branches: [codigolab, codigolab-complete-20261102]
+  pull_request:
+    branches: [codigolab]
+  workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
+concurrency:
+  group: codigolab-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
         with:
-          bun-version: latest
-      - run: bun install --no-save
-      - run: bun run build
-      - run: bun run typecheck
-      - run: bun run test --passWithNoTests
-      - name: Verificar execução real das soluções didáticas
-        run: bun scripts/verify-curriculum.mjs
-      - name: Testar política HTTP do Worker
-        run: bun scripts/worker-security.test.mjs
-      - name: Instalar navegador para smoke test
-        run: |
-          bun add -d playwright
-          bunx playwright install chromium
-      - name: Smoke test do build candidato em navegador real
-        run: |
-          ./node_modules/.bin/vite preview --host 127.0.0.1 --port 4173 >/tmp/codigolab-vite.log 2>&1 &
-          VITE_PID=$!
-          trap 'kill "$VITE_PID" 2>/dev/null || true' EXIT
-          for i in $(seq 1 20); do
-            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
-            sleep 1
-          done
-          CODIGOLAB_URL=http://127.0.0.1:4173 bun scripts/smoke.mjs
-      - name: Smoke test HTTPS da prévia com CSP ativada
-        if: github.ref == 'refs/heads/codigolab-audit-20261102'
-        env:
-          CODIGOLAB_URL: https://95fba17b.codigolab.pages.dev
-        run: bun scripts/smoke.mjs
-      - name: Smoke test da produção HTTPS com Chromium
-        if: github.ref == 'refs/heads/codigolab'
-        env:
-          CODIGOLAB_URL: https://codigolab.pages.dev
-        run: bun scripts/smoke.mjs
-      - name: Testar experiência completa na prévia Cloudflare
-        if: github.ref == 'refs/heads/codigolab-curriculum-20261102'
-        env:
-          CODIGOLAB_URL: https://6f7d56f1.codigolab.pages.dev
-        run: bun scripts/smoke.mjs
-      - name: Testar biblioteca, execução e PWA na prévia Cloudflare
-        if: github.ref == 'refs/heads/codigolab-integracao-20261102'
-        env:
-          CODIGOLAB_URL: https://84aeb43e.codigolab.pages.dev
-        run: bun scripts/smoke.mjs
-      - name: Verificar SQL WASM real e biblioteca na prévia Cloudflare
-        if: github.ref == 'refs/heads/codigolab-sql-20261102'
-        env:
-          CODIGOLAB_URL: https://12ff11aa.codigolab.pages.dev
-        run: bun scripts/smoke.mjs
-      - name: Prepare static build in isolated branch
-        if: github.ref == 'refs/heads/codigolab'
-        run: |
-          git config user.name "CodigoLab CI"
-          git config user.email "actions@users.noreply.github.com"
-          git switch -C codigolab-dist
-          git add -f dist
-          git commit -m "build: static files from validated source [skip ci]"
-          git push origin HEAD:refs/heads/codigolab-dist --force
-
-      - name: Build de prévia isolado do material expandido
-        if: github.ref == 'refs/heads/codigolab-curriculum-20261102'
-        run: |
-          git config user.name "CodigoLab CI"
-          git config user.email "actions@users.noreply.github.com"
-          git switch -C codigolab-curriculum-dist
-          git add -f dist
-          git commit -m "build: candidato de curriculum [skip ci]"
-          git push origin HEAD:refs/heads/codigolab-curriculum-dist --force
-
-      - name: Publicar build isolado da biblioteca ampliada
-        if: github.ref == 'refs/heads/codigolab-integracao-20261102'
-        run: |
-          git config user.name "CodigoLab CI"
-          git config user.email "actions@users.noreply.github.com"
-          git switch -C codigolab-integracao-dist
-          git add -f dist
-          git commit -m "build: indexed external library candidate [skip ci]"
-          git push origin HEAD:refs/heads/codigolab-integracao-dist --force
-
-      - name: Publicar build isolado do laboratório SQL
-        if: github.ref == 'refs/heads/codigolab-sql-20261102'
-        run: |
-          git config user.name "CodigoLab CI"
-          git config user.email "actions@users.noreply.github.com"
-          git switch -C codigolab-sql-dist
-          git add -f dist
-          git commit -m "build: validated SQL lab candidate [skip ci]"
-          git push origin HEAD:refs/heads/codigolab-sql-dist --force
-
-      - name: Testar editor web e regressões na prévia Cloudflare
-        if: github.ref == 'refs/heads/codigolab-web-workspace-20261102'
-        env:
-          CODIGOLAB_URL: https://a94f5cb7.codigolab.pages.dev
-        run: bun scripts/smoke.mjs
-      - name: Preparar artefato web de prévia isolada
-        if: github.ref == 'refs/heads/codigolab-web-workspace-20261102'
-        run: |
-          git config user.name "CodigoLab CI"
-          git config user.email "actions@users.noreply.github.com"
-          git switch -C codigolab-web-workspace-dist
-          git add -f dist
-          git commit -m "build: validated responsive workspace candidate [skip ci]"
-          git push origin HEAD:refs/heads/codigolab-web-workspace-dist --force
-
-      - name: Testar fluxo Git e regressões na prévia Cloudflare
-        if: github.ref == 'refs/heads/codigolab-git-lab-20261102'
-        env:
-          CODIGOLAB_URL: https://8e264b41.codigolab.pages.dev
-        run: bun scripts/smoke.mjs
-      - name: Preparar build do laboratório Git para Cloudflare
-        if: github.ref == 'refs/heads/codigolab-git-lab-20261102'
-        run: |
-          git config user.name "CodigoLab CI"
-          git config user.email "actions@users.noreply.github.com"
-          git switch -C codigolab-git-dist
-          git add -f dist
-          git commit -m "build: browser Git lab validated [skip ci]"
-          git push origin HEAD:refs/heads/codigolab-git-dist --force
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:content
+      - run: npm run verify:curriculum
+      - run: node scripts/worker-security.test.mjs
+      - run: node scripts/monitor-check.mjs
+      - run: npm run build
+      - name: Navegador real com assets nativos, CSP e D1 local
+        run: npm run qa
+      - name: Dependências Python/npm, imports atualizados e limites de execução
+        run: node scripts/runtime-dependencies-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codigolab-verified-${{ github.sha }}
+          path: dist
+          retention-days: 14
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/codigolab' && vars.CF_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: codigolab-verified-${{ github.sha }}
+          path: dist
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=codigolab --branch=codigolab

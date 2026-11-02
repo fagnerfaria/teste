@@ -6,7 +6,7 @@ import { useRunner, footerFor } from "@/hooks/use-runner";
 import { getData, saveDraft, useData } from "@/lib/store";
 import {
   WORKSPACE_TEMPLATES, createWorkspace, parseWorkspace, validateWorkspacePath,
-  upsertWorkspaceFile, removeWorkspaceFile, makeHtmlPreview,
+  upsertWorkspaceFile, removeWorkspaceFile, makeHtmlProjectPreview, prepareWorkspaceRun, prepareWorkspaceTests, PYTHON_PACKAGES,
   type Workspace, type WorkspaceKind,
 } from "@/lib/workspace";
 
@@ -44,6 +44,7 @@ function WorkspacePage(){
  const [newPath,setNewPath]=useState("");
  const [feedback,setFeedback]=useState("");
  const [htmlPreview,setHtmlPreview]=useState("");
+ const [preparing,setPreparing]=useState(false);
  const [savedState,setSavedState]=useState("Salvo localmente");
  const runner=useRunner();
  const data=useData();
@@ -87,6 +88,7 @@ function WorkspacePage(){
    setHtmlPreview("");runner.setChunks([]);setFeedback("Modelo restaurado.");
  };
  const importProject=async(e:ChangeEvent<HTMLInputElement>)=>{
+   if(preparing||runner.running){setFeedback("Aguarde a execução antes de importar outro projeto.");e.target.value="";return;}
    const file=e.target.files?.[0];e.target.value="";
    if(!file)return;
    if(file.size>230000){setFeedback("Importação rejeitada: arquivo muito grande.");return;}
@@ -100,14 +102,26 @@ function WorkspacePage(){
      setHtmlPreview("");
    }catch(e){setFeedback(e instanceof Error?e.message:"Falha ao ler o arquivo.");}
  };
- const run=()=>{
-   setFeedback("");
-   if(kind==="web"){
-     try{setHtmlPreview(makeHtmlPreview(project));}
-     catch(e){setFeedback(String(e));}
-   }else{
-     void runner.run(kind,project.files[project.entry]??"",{timeoutMs:data.timeoutMs});
-   }
+ const run=async(tests=false)=>{
+   setFeedback("");setPreparing(true);
+   try{
+     if(kind==="web")setHtmlPreview(await makeHtmlProjectPreview(project));
+     else{
+       const prepared=await (tests?prepareWorkspaceTests(project):prepareWorkspaceRun(project));
+       await runner.run(prepared.lang,prepared.code,{timeoutMs:data.timeoutMs,module:prepared.module,...(prepared.project?{project:prepared.project}:{})});
+     }
+   }catch(e){setFeedback(e instanceof Error?e.message:"Não foi possível preparar o projeto.");}
+   finally{setPreparing(false);}
+ };
+ const dependencies=()=>{
+   const name=kind==="python"?"requirements.txt":"package.json";
+   if(!Object.hasOwn(project.files,name))updateProject(upsertWorkspaceFile(project,name,kind==="python"?"# Um pacote suportado por linha.\n":'{"dependencies":{}}\n'));
+   setSelected(p=>({...p,[kind]:name}));
+ };
+ const setEntry=()=>{
+   const next={...project,entry:currentPath};
+   if(!parseWorkspace(JSON.stringify(next))){setFeedback("Selecione um arquivo principal compatível com a linguagem do projeto.");return;}
+   updateProject(next);setFeedback("Arquivo principal atualizado.");
  };
 
  return <div className="space-y-5">
@@ -122,7 +136,7 @@ function WorkspacePage(){
   <section className="flex flex-wrap items-center gap-3">
    <label className="flex min-w-60 flex-1 flex-col gap-1 text-sm font-semibold">Projeto
     <select aria-label="Projeto ativo" className="rounded-lg border bg-background p-3" value={kind}
-      onChange={e=>changeKind(e.target.value as WorkspaceKind)}>
+      disabled={preparing||runner.running} onChange={e=>changeKind(e.target.value as WorkspaceKind)}>
       {WORKSPACE_TEMPLATES.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}
     </select>
    </label>
@@ -150,7 +164,7 @@ function WorkspacePage(){
    <section className="min-w-0 space-y-3">
     <div className="flex flex-wrap items-center justify-between gap-2">
      <div><h2 className="font-bold">{currentPath}</h2><p className="text-xs text-muted-foreground">{savedState} · principal: {project.entry}</p></div>
-     <button className="btn btn-ghost text-xs" disabled={currentPath===project.entry} onClick={removeFile}>Excluir arquivo</button>
+     <div className="flex flex-wrap gap-2"><button className="btn btn-ghost text-xs" disabled={currentPath===project.entry||preparing} onClick={setEntry}>Definir como principal</button><button className="btn btn-ghost text-xs" disabled={currentPath===project.entry||preparing} onClick={removeFile}>Excluir arquivo</button></div>
     </div>
     {/\.(?:py|js|ts|html)$/i.test(currentPath)?
      <CodeEditor key={kind+":"+currentPath} value={project.files[currentPath]??""} onChange={changeFile} lang={editorLang(currentPath)}
@@ -158,16 +172,18 @@ function WorkspacePage(){
      <textarea aria-label={"Editor "+currentPath} value={project.files[currentPath]??""} onChange={e=>changeFile(e.target.value)}
        className="min-h-80 w-full resize-y rounded-lg border bg-card p-4 font-mono text-sm" spellCheck={false}/>}
     <div className="flex flex-wrap gap-2">
-     <button onClick={run} disabled={runner.running} className="btn btn-primary">
-      {runner.running?"Executando…":kind==="web"?"▶ Atualizar prévia":"▶ Executar arquivo principal"}
+     <button onClick={()=>void run()} disabled={runner.running||preparing} className="btn btn-primary">
+      {preparing&&!runner.running?"Preparando projeto…":runner.running?"Executando…":kind==="web"?"▶ Atualizar prévia":"▶ Executar arquivo principal"}
      </button>
+     {kind!=="web"&&<button className="btn btn-ghost" disabled={preparing||runner.running} onClick={()=>void run(true)}>✓ Executar testes do projeto</button>}
+     {kind!=="web"&&<button className="btn btn-ghost" disabled={preparing} onClick={dependencies}>Dependências</button>}
      {kind!=="web"&&runner.running&&<button className="btn btn-danger" onClick={runner.stop}>■ Parar</button>}
      <button onClick={()=>downloadFile("codigolab-"+kind+".json",JSON.stringify(project,null,2))} className="btn btn-ghost">Exportar projeto</button>
      <label className="btn btn-ghost cursor-pointer">
        Importar projeto
        <input aria-label="Importar arquivo JSON do projeto" type="file" accept=".json,application/json" className="sr-only" onChange={e=>void importProject(e)}/>
      </label>
-     <button onClick={resetProject} className="btn btn-ghost">Restaurar modelo</button>
+     <button onClick={resetProject} disabled={preparing||runner.running} className="btn btn-ghost">Restaurar modelo</button>
     </div>
     {!!feedback&&<p role="status" className="rounded-lg border p-3 text-sm">{feedback}</p>}
     {kind==="web"?<div className="space-y-2">
@@ -178,7 +194,8 @@ function WorkspacePage(){
     </div>:
     <div className="space-y-2"><h3 className="font-bold">Saída do executor</h3>
       <Terminal chunks={runner.chunks} footer={footerFor(runner.last)}/>
-      <p className="text-xs text-muted-foreground">Executa somente {project.entry}. Imports de outros arquivos do projeto não estão disponíveis neste executor e não são simulados. O limite de execução é {data.timeoutMs/1000} segundos.</p>
+      <p className="text-xs text-muted-foreground">Executa {project.entry} e seus imports locais reais. Testes Python usam unittest; JavaScript usa arquivos .test.js/.test.ts. Dependências npm exigem versão exata em package.json e podem requerer rede. Python aceita requirements.txt com pacotes Pyodide. O limite de execução é {data.timeoutMs/1000} segundos.</p>
+      {kind==="python"&&<p className="text-xs text-muted-foreground">Pacotes Python suportados: {PYTHON_PACKAGES.join(", ")}. Versões fixadas pelo Pyodide; o primeiro download de pacotes requer internet.</p>}
     </div>}
    </section>
   </div>

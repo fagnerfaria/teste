@@ -6,7 +6,7 @@ export function PyStatusBadge() {
   const map = {
     idle: ["Python não carregado", "bg-muted text-muted-foreground"],
     loading: ["Carregando Python (Pyodide)…", "bg-warning/20"],
-    ready: [`Python ${PYODIDE_VERSION === "0.26.4" ? "3.12" : ""} pronto`, "bg-success/20"],
+    ready: [`Python ${PYODIDE_VERSION === "0.28.3" ? "3.13" : ""} pronto`, "bg-success/20"],
     failed: ["Falha ao carregar Python", "bg-destructive/15 text-destructive"],
   } as const;
   const [label, cls] = map[s];

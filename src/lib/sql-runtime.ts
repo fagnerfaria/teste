@@ -3,7 +3,7 @@
  * Sem servidor, contas, tokens ou acesso aos arquivos do aparelho.
  */
 export const SQL_JS_VERSION = "1.14.2";
-const SQL_JS_CDN = "https://cdn.jsdelivr.net/npm/sql.js@" + SQL_JS_VERSION + "/dist/";
+const SQL_JS_CDN = typeof location !== "undefined" ? new URL("/vendor/sql/", location.href).href : "http://localhost/vendor/sql/";
 export const SQL_SEED = [
  "CREATE TABLE alunos (id INTEGER PRIMARY KEY, nome TEXT NOT NULL, idade INTEGER NOT NULL, ativo INTEGER NOT NULL);",
  "INSERT INTO alunos VALUES (1,'Ana',24,1),(2,'Beto',19,1),(3,'Clara',32,0),(4,'Diego',27,1);",

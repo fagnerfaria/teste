@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { DIAGNOSTIC, nextReview, type ReviewGrade, type ReviewState } from "./learning";
 
 export type Attempt = { exerciseId: string; ok: boolean; ts: number };
 export type AppData = {
@@ -12,36 +13,68 @@ export type AppData = {
   lastLesson?: string;
   timeoutMs: number;
   theme: "light" | "dark";
+  reviews?: Record<string, ReviewState>;
+  diagnostic?: { answers: Record<string, number>; completedAt: number };
 };
 
 const KEY = "codigolab:v1";
 export const defaultData = (): AppData => ({
   version: 1, completedLessons: {}, passedExercises: {}, openedLessons: {}, attempts: [],
-  drafts: {}, checklist: {}, timeoutMs: 5000, theme: "light",
+  drafts: {}, checklist: {}, timeoutMs: 5000, theme: "light", reviews: {},
 });
 const SERVER = defaultData();
 let data: AppData = SERVER;
 let loaded = false;
+let persistenceError = "";
 const ls = new Set<() => void>();
+const notify = () => ls.forEach(listener => listener());
 
 function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) data = { ...defaultData(), ...JSON.parse(raw) };
-  } catch { /* dados corrompidos: usa padrão */ }
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw);
+      if (validateBackup(parsed)) data = { ...defaultData(), ...parsed };
+    }
+  } catch { persistenceError = "Não foi possível ler os dados deste navegador. Confira as permissões de armazenamento e mantenha um backup."; }
+  window.addEventListener("storage", event => {
+    if (event.key !== KEY) return;
+    try {
+      const value: unknown = event.newValue ? JSON.parse(event.newValue) : defaultData();
+      if (validateBackup(value)) { data = { ...defaultData(), ...value }; ls.forEach(listener => listener()); }
+    } catch { /* ignora alterações corrompidas de outra aba */ }
+  });
 }
 
 export function getData() { load(); return data; }
 export function update(fn: (d: AppData) => AppData) {
   load();
   data = fn(data);
-  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch { /* cota cheia */ }
-  ls.forEach((l) => l());
+  try { localStorage.setItem(KEY, JSON.stringify(data)); persistenceError = ""; }
+  catch { persistenceError = "O navegador não conseguiu salvar as últimas alterações. Elas estão apenas nesta aba; exporte um backup antes de sair e libere espaço no navegador."; }
+  notify();
 }
-export function replaceAll(d: AppData) { update(() => ({ ...defaultData(), ...d })); }
-export function resetAll() { update(() => defaultData()); }
+/** Importação e sincronização só substituem a memória após escrita persistente confirmada. */
+export function replaceAll(d: AppData) {
+  load();
+  if (!validateBackup(d)) throw new Error("O backup não passou na validação. Seu progresso local não foi substituído.");
+  const next = { ...defaultData(), ...d };
+  try { localStorage.setItem(KEY, JSON.stringify(next)); }
+  catch { persistenceError = "Não foi possível salvar a cópia recebida. O progresso local não foi substituído; libere espaço ou permita o armazenamento e tente novamente."; notify(); throw new Error(persistenceError); }
+  data = next; persistenceError = ""; notify();
+}
+export function resetAll() {
+  load();
+  try { localStorage.removeItem(KEY); }
+  catch { persistenceError = "Não foi possível apagar o progresso salvo. Confira as permissões de armazenamento do navegador e tente novamente."; notify(); throw new Error(persistenceError); }
+  data = defaultData(); persistenceError = ""; notify();
+}
+export function getPersistenceError() { return persistenceError; }
+export function usePersistenceError() {
+  return useSyncExternalStore(listener => { ls.add(listener); return () => { ls.delete(listener); }; }, getPersistenceError, () => "");
+}
 
 export function useData() {
   return useSyncExternalStore(
@@ -62,6 +95,7 @@ const finiteNonnegative = (v: unknown): v is number =>
 function validEntries(v: unknown, check: (item: unknown) => boolean): boolean {
   return isRecord(v) &&
     Object.keys(v).length <= 10000 &&
+    !Object.keys(v).some(key => ["__proto__", "prototype", "constructor"].includes(key)) &&
     Object.values(v).every(check);
 }
 
@@ -79,6 +113,15 @@ export function validateBackup(x: unknown): x is AppData {
   if (typeof x["timeoutMs"] !== "number" || ![2000, 5000, 10000, 30000].includes(x["timeoutMs"])) return false;
   if (x["theme"] !== "light" && x["theme"] !== "dark") return false;
   if (x["lastLesson"] !== undefined && typeof x["lastLesson"] !== "string") return false;
+  if (x["reviews"] !== undefined && !validEntries(x["reviews"], review =>
+    isRecord(review) && Number.isInteger(review["repetitions"]) && finiteNonnegative(review["repetitions"]) &&
+    finiteNonnegative(review["intervalDays"]) && finiteNonnegative(review["due"]) && finiteNonnegative(review["lastReviewed"]))) return false;
+  if (x["diagnostic"] !== undefined) {
+    const diagnostic = x["diagnostic"];
+    if (!isRecord(diagnostic) || !finiteNonnegative(diagnostic["completedAt"]) || !validEntries(diagnostic["answers"], answer => typeof answer === "number" && Number.isInteger(answer) && answer >= 0 && answer < 4)) return false;
+    if (!Object.keys(diagnostic["answers"] as object).every(key => DIAGNOSTIC.some(question => question.id === key))) return false;
+    if (!DIAGNOSTIC.every(question => Object.hasOwn(diagnostic["answers"] as object, question.id))) return false;
+  }
   return true;
 }
 
@@ -88,4 +131,8 @@ export const recordAttempt = (exerciseId: string, ok: boolean) =>
     ...d,
     attempts: [{ exerciseId, ok, ts: Date.now() }, ...d.attempts].slice(0, 50),
     passedExercises: ok && !d.passedExercises[exerciseId] ? { ...d.passedExercises, [exerciseId]: Date.now() } : d.passedExercises,
+    reviews: ok && !d.reviews?.[exerciseId] ? { ...d.reviews, [exerciseId]: nextReview(undefined, "good", Date.now()) } : d.reviews ?? {},
   }));
+
+export const recordReview = (exerciseId: string, grade: ReviewGrade) => update(d => ({ ...d, reviews: { ...d.reviews, [exerciseId]: nextReview(d.reviews?.[exerciseId], grade, Date.now()) } }));
+export const saveDiagnostic = (answers: Record<string, number>) => update(d => ({ ...d, diagnostic: { answers, completedAt: Date.now() } }));

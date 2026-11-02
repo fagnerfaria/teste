@@ -15,7 +15,7 @@ export const COURSES: Course[] = [
   {
     id: "ubl", title: "Universidade Brasileira Livre — Ciência da Computação", org: "Comunidade Universidade-Livre",
     language: "Português", level: "Iniciante a avançado",
-    description: "Grade curricular de ciência da computação montada com cursos gratuitos, organizada como uma graduação. Ideal como mapa de longo prazo.",
+    description: "Grade curricular de Ciência da Computação montada com cursos gratuitos. Os documentos do repositório estão incorporados sob MIT; cursos, livros e vídeos de terceiros continuam na origem.",
     links: [{ label: "Abrir material original (GitHub)", url: "https://github.com/Universidade-Livre/ciencia-da-computacao" }],
     modules: ["Introdução à computação", "Matemática discreta", "Algoritmos e estruturas de dados", "Sistemas operacionais", "Redes", "Banco de dados"],
     adaptedLessons: false,
@@ -34,7 +34,7 @@ export const COURSES: Course[] = [
   {
     id: "aprenda-community", title: "Aprenda Community", org: "lucianodiisouza e comunidade",
     language: "Português", level: "Iniciante",
-    description: "Coleção colaborativa de links e materiais gratuitos em português sobre várias tecnologias. Útil para achar a próxima fonte de estudo.",
+    description: "Percursos completos em português com explicações, questões e desafios. Os textos autorizados de roadmaps/** estão incorporados ao leitor local com atribuição CC BY-SA 4.0.",
     links: [{ label: "Abrir material original (GitHub)", url: "https://github.com/lucianodiisouza/aprenda-community" }],
     modules: ["Lógica de programação", "Front-end", "Back-end", "Git e GitHub", "Carreira"],
     adaptedLessons: false,
@@ -42,10 +42,10 @@ export const COURSES: Course[] = [
 ];
 
 export const FUTURE_TRACKS = [
-  { title: "Python", status: "Em andamento", note: "12 aulas autorais disponíveis no percurso guiado." },
-  { title: "Web (HTML, CSS, JS)", status: "Planejada", note: "Já é possível praticar no laboratório HTML." },
-  { title: "Git e GitHub", status: "Planejada", note: "Versionar código e publicar projetos." },
-  { title: "APIs", status: "Planejada", note: "Consumir dados da internet com Python e JS." },
-  { title: "Automação", status: "Planejada", note: "Scripts para arquivos, planilhas e tarefas repetitivas." },
-  { title: "Fundamentos de IA", status: "Planejada", note: "Conceitos de dados, modelos e uso responsável." },
+  {title:"Python",status:"Disponível",note:"Fundamentos, estruturas de dados e algoritmos com exercícios executáveis."},
+  {title:"Web (HTML, CSS, JS)",status:"Disponível",note:"Aulas, projeto responsivo e laboratório web."},
+  {title:"Git e GitHub",status:"Disponível",note:"Versionamento real no navegador, revisão e CI."},
+  {title:"APIs",status:"Disponível",note:"Contratos, erros, paginação, autenticação e prática local."},
+  {title:"Automação",status:"Disponível",note:"Fluxos, arquivos, idempotência e ferramentas."},
+  {title:"Fundamentos de IA",status:"Disponível",note:"RAG, avaliação, agentes e segurança com laboratórios locais."},
 ];

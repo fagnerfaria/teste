@@ -1,4 +1,5 @@
 import { EXTERNAL_RECORDS } from "./external-records";
+import { SNAPSHOT_DOCUMENTS } from "./snapshot-index";
 
 export type SourceId = "30-dias-python" | "ubl" | "freecodecamp" | "aprenda-community";
 export type ExternalKind = "document" | "directory";
@@ -9,8 +10,8 @@ export type ExternalSource = {
 };
 
 /**
- * Metadados e caminhos públicos: sem distribuir textos ou alterar autoria.
- * O conteúdo permanece nos projetos originais; visualização remota é facultativa.
+ * Metadados e caminhos públicos com snapshots dos documentos redistribuíveis.
+ * Textos preservam autoria e licença; fontes sem autorização permanecem externas.
  * Nem toda dependência, imagem ou vídeo externo está coberto pela licença do repositório.
  */
 export const EXTERNAL_SOURCES: readonly ExternalSource[] = [
@@ -97,7 +98,9 @@ function category(path: string): string {
   return "Biblioteca";
 }
 
-export const EXTERNAL_ITEMS: readonly ExternalItem[] = EXTERNAL_RECORDS.map(([id, path, kind]) => ({
+const indexedPaths = new Set(EXTERNAL_RECORDS.map(([id,path])=>id+":"+path));
+const records = [...EXTERNAL_RECORDS,...SNAPSHOT_DOCUMENTS.filter(doc=>!indexedPaths.has(doc.sourceId+":"+doc.path)).map(doc=>[doc.sourceId,doc.path,"document"] as const)];
+export const EXTERNAL_ITEMS: readonly ExternalItem[] = records.map(([id, path, kind]) => ({
   sourceId: id as SourceId,
   path, kind,
   title: readableTitle(path, kind),

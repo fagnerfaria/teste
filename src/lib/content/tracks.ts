@@ -4,6 +4,8 @@ import { WEB } from "./tracks-web";
 import { ENGINEERING } from "./tracks-engineering";
 import { AUTOMATION } from "./tracks-automation";
 import { AI } from "./tracks-ai";
+import { COMPUTER_SCIENCE } from "./tracks-cs";
+import { LESSON_DEPTH } from "./lesson-depth";
 
 export type { LearningUnit, Track, Capstone, ExampleLang, CodeChallenge, QuizChallenge } from "./track-types";
 export const TRACKS: Track[] = [
@@ -14,7 +16,7 @@ export const TRACKS: Track[] = [
  {id:"automacao",title:"05 · APIs e automação",summary:"HTTP, dados, autenticação, paginação, retentativas, arquivos, fluxos e MCP.",prerequisites:"Saiba funções, JSON e HTTP básico.",color:"rose",sources:["ubl","aprenda-community"]},
  {id:"ia-agentes",title:"06 · Inteligência artificial e agentes",summary:"LLMs, prompts, ferramentas, RAG, embeddings, avaliações e supervisão.",prerequisites:"Tenha noções de APIs, programação e segurança.",color:"emerald",sources:["freecodecamp","ubl"]},
 ];
-export const UNITS: LearningUnit[] = [...PYTHON_PRO,...WEB,...ENGINEERING,...AUTOMATION,...AI];
+export const UNITS: LearningUnit[] = [...PYTHON_PRO,...WEB,...ENGINEERING,...AUTOMATION,...AI,...COMPUTER_SCIENCE].map(unit=>({...unit,explanation:[...unit.explanation,...(LESSON_DEPTH[unit.id]||[])]}));
 export const unitsForTrack = (trackId: string) => UNITS.filter(u=>u.trackId===trackId);
 export const unitById = (id:string) => UNITS.find(u=>u.id===id);
 export const trackById = (id:string) => TRACKS.find(t=>t.id===id);
@@ -57,4 +59,16 @@ export const PROJECTS: Capstone[] = [
   steps:["Defina objetivo, ferramentas autorizadas e ações proibidas.","Descreva contrato de entradas e saídas.","Implemente roteamento determinístico para um pedido simples.","Registre cada decisão sem capturar segredos.","Crie três avaliações: sucesso, dado ausente e ordem maliciosa."],
   acceptance:["Ações não permitidas são recusadas.","Resultados simulados são identificados como simulações.","Há casos de teste reproduzíveis e trilha de decisão."],
   resources:["ai-llm","ai-tools","ai-evals","ai-safety"]},
+ {id:"proj-busca",trackId:"python-pro",title:"Catálogo com busca e validação",lang:"python",
+  summary:"Implemente um catálogo ordenado com busca binária, preservando duplicatas e medindo comparações de forma determinística.",
+  starter:'registros = [{"id":2,"nome":"B"},{"id":1,"nome":"A"},{"id":3,"nome":"C"}]\n# Valide, ordene por id e implemente buscar(registros, alvo).\n',
+  steps:["Defina o contrato: ids inteiros únicos, nomes não vazios e ausência representada por None.","Valide entrada antes de ordenar e rejeite ids duplicados com erro explícito.","Separe validação, ordenação e busca em funções; a busca não deve modificar o catálogo.","Implemente busca binária e conte comparações sem medir tempo de parede.","Crie testes para primeiro, último, ausente, vazio e formato inválido.","Compare resultados com uma busca linear independente e exporte o código do workspace."],
+  acceptance:["Buscar id 2 retorna o registro de nome B.","Catálogo vazio e id ausente retornam None.","Ids duplicados e registros sem nome são rejeitados antes da busca.","A entrada original permanece intacta.","Todos os testes independentes passam e a pré-condição de ordenação está documentada."],
+  resources:["cs-busca","cs-ordenacao","p2-testes"]},
+ {id:"proj-grafos",trackId:"python-pro",title:"Planejador de caminhos em grafo",lang:"python",
+  summary:"Construa um mapa fictício e encontre caminhos mínimos sem pesos com BFS, incluindo ciclos, vértices isolados e validação.",
+  starter:'grafo = {"A":["B","C"],"B":["D"],"C":["D"],"D":[],"E":[]}\n# Implemente caminho(grafo, origem, destino).\n',
+  steps:["Declare se as arestas têm direção e registre que o exercício não aceita pesos.","Valide que todos os vizinhos existem no mapa.","Use deque, conjunto de visitados e mapa de predecessores.","Reconstrua o caminho do destino até a origem e inverta a sequência.","Teste origem igual ao destino, destino isolado, ciclo e vértice inexistente.","Explique por que BFS minimiza arestas e por que não resolve custos diferentes."],
+  acceptance:["A→D produz A,B,D ou A,C,D, com duas arestas.","A→E retorna uma ausência explícita sem laço infinito.","A→A produz uma lista contendo somente A.","Um ciclo A→B→A não impede o término.","Uma referência a vértice inexistente produz erro claro."],
+  resources:["cs-grafos","cs-pilha-fila","cs-complexidade"]},
 ];

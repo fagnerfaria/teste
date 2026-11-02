@@ -34,9 +34,9 @@ describe("Percursos progressivos CódigoLab", () => {
       }
     }
   });
-  it("disponibiliza seis projetos finais com aceitação definida",()=>{
-    expect(PROJECTS).toHaveLength(6);
-    expect(new Set(PROJECTS.map(p=>p.id)).size).toBe(6);
+  it("disponibiliza projetos finais com aceitação definida",()=>{
+    expect(PROJECTS.length).toBeGreaterThanOrEqual(8);
+    expect(new Set(PROJECTS.map(p=>p.id)).size).toBe(PROJECTS.length);
     for(const p of PROJECTS){
       expect(p.steps.length).toBeGreaterThanOrEqual(4);
       expect(p.acceptance.length).toBeGreaterThanOrEqual(3);

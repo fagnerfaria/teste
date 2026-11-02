@@ -1,32 +1,66 @@
 # CódigoLab
 
-Academia gratuita de programação do zero com laboratório Python (Pyodide Web Worker), JavaScript (Web Worker), simulações guiadas e desafios. Conteúdo autoral inspirado em projetos educacionais abertos, com links para 30 Dias de Python, Universidade Brasileira Livre, freeCodeCamp e Aprenda Community.
+Site gratuito para aprender e praticar programação, do zero a projetos com APIs e agentes. React 19, TypeScript, Vite, TanStack Router e CodeMirror. Funciona no navegador do celular e do computador; instalar como PWA é opcional.
 
-### Desenvolvimento
+## Conteúdo integrado
 
-`npm install`, `npm run dev`, `npm run build`, `npm run typecheck`, `npm run test`.
+- 68 aulas/unidades autorais em seis trilhas, com exemplos executáveis e avaliações; oito projetos orientados.
+- 615 documentos integrais incorporados: 51 da Universidade Brasileira Livre (MIT) e 564 do escopo autorizado do Aprenda Community (CC BY-SA 4.0).
+- 41 percursos, 222 questões e 112 checkpoints do Aprenda. Diagramas Mermaid são renderizados isoladamente; MDX é interpretado como dados, sem executar componentes da origem.
+- Índice pesquisável das quatro fontes, com atribuição, revisão, integridade e licenças. Os cursos, vídeos, livros externos e certificações oficiais mantêm suas condições próprias.
 
-Publicação: Vite SPA, pasta `dist/`. Dados permanecem no navegador com exportação JSON. Não execute código desconhecido; o isolamento por Worker não fornece segurança de servidor multiusuário.
+A tradução de 30 Dias de Python não apresentou autorização suficiente de redistribuição; o currículo do freeCodeCamp tem copyright próprio, separado do software. Esses materiais, assim como projetos Aprenda fora de roadmaps/**, permanecem acessíveis na fonte original. Os snapshots não incluem livros, vídeos ou sites de terceiros. Veja [proveniência e licenças](docs/content/README.md).
 
+## Prática real
 
-## Biblioteca dos repositórios originais (02/11/2026)
+- `/workspace`:arquivos locais Python/JavaScript/TypeScript/JSON e prévia web isolada; imports reais; unittest e arquivos .test.js/.test.ts; pacotes Pyodide em requirements.txt e npm com versão exata em package.json.
+- `/lab`:Python e JavaScript reais em Workers, entrada padrão, saída, erros, interrupção e timeout.
+- `/sql`:SQLite WASM real, banco fictício descartável por consulta. O laboratório HTTP tem persistência independente.
+- `/git`:Git real em IndexedDB, com commits, branches e histórico locais. Sem push/clone remoto.
+- `/api`:Request/Response, login/logout fictício, CRUD persistente, filtros e testes de aceitação. Inclui download de um servidor Node 24 completo, sem dependências npm, com testes de HTTP real. O modo de navegador executa o contrato localmente, sem abrir servidor TCP.
+- `/agentes`:recuperação lexical editável, extratos com fontes, abstenção, ferramentas JSON-RPC/MCP didáticas e avaliação Hit@k. Não há modelo generativo pago ou conexão remota MCP; o subconjunto estudado declara sua revisão.
 
-A rota /biblioteca indexa 1.764 caminhos públicos do GitHub: 30 Dias de Python (30 documentos), Universidade Brasileira Livre (47), freeCodeCamp (1.108 blocos + 31 mapas de certificação) e Aprenda Community (548 arquivos de aulas, trilhas, projetos e bootcamps). O índice contém metadados e links, **não cópia integral das obras**. Prévia Markdown/MDX sob demanda apenas quando o licenciamento indicado pela fonte permite; MDX interativo não é executado. Desafios e certificações do freeCodeCamp continuam na plataforma original. Referências de terceiros dentro dos repositórios têm direitos próprios.
+O editor não substitui um sistema operacional. Dependências que exigem Node, processos nativos ou um framework de servidor precisam do ambiente apropriado. Os desafios que dependem disso são identificados. Pacotes adicionais são baixados sob demanda e sujeitos à compatibilidade do navegador.
 
-PWA: instalação pelo navegador compatível, com cache de páginas e assets próprios; sem sincronização de progresso entre aparelhos. O Python ainda depende do download inicial do Pyodide. As atividades originais de terceiros não foram convertidas em testes locais automaticamente; a bateria de exercícios próprios permanece independente.
+## Aprendizado e dados
 
+`/percurso` reúne diagnóstico, competências e revisão espaçada. Exercícios iniciais possuem múltiplos casos e verificações de contrato; casos e critérios são auditáveis no cliente, sem alegação de avaliação secreta ou certificação oficial.
 
-### Laboratório SQLite real
-A rota `/sql` executa consultas reais num banco SQLite WASM via sql.js v1.14.2 (MIT). Funciona por Web Worker separado, com limite de 20 segundos, banco fictício recriado a cada consulta, no máximo 100 linhas exibidas. Não usa credenciais nem arquivos do aparelho. O carregamento inicial depende da CDN jsDelivr e de um navegador com WebAssembly.
+`/dados` permite backup JSON e sincronização opcional/manual entre aparelhos. O cliente cifra com AES-GCM e uma chave aleatória privada; o servidor D1 armazena apenas o envelope cifrado. Revisões monotônicas impedem sobrescrita por versões antigas, inclusive após exclusão e recriação. O código privado nunca entra em URL ou telemetria e não fica salvo no navegador. Sem ele não há recuperação da cópia remota.
 
+A sincronização inclui progresso, diagnóstico, revisão, rascunhos e projetos do editor. Histórico Git, banco do laboratório HTTP e base RAG têm armazenamento separado. O limite do backup sincronizado é 2 MiB antes da cifra. Falhas de persistência são exibidas, e uma importação não anuncia sucesso quando o navegador recusa a gravação.
 
-## Plataforma web (sem aplicativo Android obrigatório)
+## Desenvolvimento e verificação
 
-A rota `/workspace` oferece uma IDE educativa de navegador com até 50 arquivos por projeto, modelos separados de HTML/CSS/JS, Python e JavaScript, editor, backup JSON e dados locais. Projetos web combinam arquivos em prévia `iframe sandbox="allow-scripts"` com política de segurança sem rede nem origem. Nos projetos Python e JS o arquivo principal é executado de verdade em Worker, mas imports entre arquivos **não** são suportados neste estágio; os demais arquivos servem à organização e edição. A instalação como PWA é opcional, não um requisito de uso. A experiência é responsiva para desktop, tablet e celular.
+Requer Node 24 e Python3 para verificar as soluções didáticas.
 
-Para publicação direta e sem proxy, a Cloudflare recomenda `wrangler pages deploy dist --project-name=codigolab` em GitHub Actions com `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` cadastrados em Secrets. Nunca colocar o token em arquivo commitado.
+```sh
+npm ci
+npm run dev
+npm run lint
+npm run typecheck
+npm test
+npm run test:content
+npm run verify:curriculum
+node scripts/worker-security.test.mjs
+node scripts/monitor-check.mjs
+npm run build
+npm run qa
+node scripts/runtime-dependencies-smoke.mjs
+```
 
+O build copia os motores Python/SQLite/esbuild da instalação versionada para assets nativos. Não publica um proxy de arquivos GitHub/jsDelivr. O núcleo e os documentos visitados podem ser cacheados para leitura offline; pacotes ainda não carregados requerem rede. O script de importação curricular preserva revisões, arquivos e SHA-256; para atualizar fontes, siga docs/content/README.md.
 
-## Laboratório Git real no navegador
+## Publicação e operação
 
-Em `/git`, usa `isomorphic-git` e `@isomorphic-git/lightning-fs` (MIT) com sistema de arquivos virtual persistente em IndexedDB. Comandos funcionais: `git init`, salvar README, `git add`, `git commit`, `git branch`, `git checkout`, `git status` e `git log`. Não oferece acesso remoto, clone, push, terminal do sistema nem autenticação GitHub. Não substitui Git instalado em projetos profissionais, mas permite executar os conceitos centrais sem instalar programas.
+Cloudflare Pages Advanced Mode recebe dist/ com Worker nativo e binding PROGRESS (D1). Schema em cloudflare/schema.sql. O deploy de produção utiliza os mesmos hashes aprovados na prévia. `/health.json` identifica o build; `/api/health` verifica o serviço; `/api/monitor` mostra a última inspeção periódica.
+
+O Worker separado cloudflare/monitor.js verifica site, build, motores WASM e disponibilidade da sincronização a cada seis horas, sem coletar dados dos estudantes. Os controles de admissão protegem o armazenamento gratuito: limite por IP para criação e teto agregado de 400 MiB de envelopes, com respostas explícitas quando indisponível. Backups existentes não expiram automaticamente.
+
+A CI gera um artefato somente após tipos, lint, testes, soluções didáticas e fluxos reais de navegador passarem. A publicação automática por GitHub Actions está preparada e depende de CF_DEPLOY_ENABLED=true e dos Secrets CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID. Sem esses segredos, a CI verifica e entrega o artefato; a publicação pode ser feita pelo conector Cloudflare autorizado. Tokens nunca são commitados.
+
+Para recuperação, use o rollback de Pages para uma implantação previamente homologada. Não há rollback destrutivo do banco nem do progresso do estudante. O monitor registra degradação, sem trocar versões automaticamente.
+
+## Contexto de continuidade
+
+Requisitos, implementação, verificações e limites reais estão em docs/implementation-status.md. A integração de memória Cortex e a telemetria Superlog dependem de autenticação/disponibilidade dos conectores; sua ausência não modifica o funcionamento do site.

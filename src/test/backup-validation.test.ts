@@ -17,4 +17,8 @@ describe("importação de backup confiável", () => {
   it("preserva compatibilidade com o backup íntegro atual", () => {
     expect(validateBackup(defaultData())).toBe(true);
   });
+  it("rejeita revisão espaçada corrompida e diagnóstico inválido", () => {
+    expect(validateBackup({ ...defaultData(), reviews: { x: { repetitions: -1, intervalDays: 1, due: 1, lastReviewed: 1 } } })).toBe(false);
+    expect(validateBackup({ ...defaultData(), diagnostic: { answers: { logic: 9 }, completedAt: 1 } })).toBe(false);
+  });
 });

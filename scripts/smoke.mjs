@@ -1,8 +1,8 @@
-import { chromium } from "playwright";
+import { launchBrowser } from "./browser.mjs";
 const url = process.env.CODIGOLAB_URL || "https://codigolab.pages.dev";
 const errors=[];
-const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
-const page=await browser.newPage({viewport:{width:390,height:844}});
+const browser=await launchBrowser();
+const page=await browser.newPage({viewport:{width:390,height:844},ignoreHTTPSErrors:!!process.env.HTTPS_PROXY});
 const networkErrors=[];
 const browserMessages=[];
 page.on("console",m=>{if(m.type()==="error"||m.type()==="warning") browserMessages.push(m.type()+": "+m.text());});

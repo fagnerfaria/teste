@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import Markdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { ImportedLesson } from "@/components/ImportedLesson";
+import { SNAPSHOT_DOCUMENTS, SNAPSHOT_COLLECTIONS } from "@/lib/content/snapshot-index";
 import {
-  EXTERNAL_ITEMS, EXTERNAL_SOURCES, buildSourceUrl, buildRawUrl,
+  EXTERNAL_ITEMS, EXTERNAL_SOURCES, buildSourceUrl,
   filterExternalItems, type ExternalItem,
 } from "@/lib/content/external-library";
 
@@ -19,57 +19,6 @@ export const Route = createFileRoute("/biblioteca")({
 
 const PAGE = 45;
 
-function MarkdownPreview({ item }: { item: ExternalItem }) {
-  const source = EXTERNAL_SOURCES.find(s => s.id === item.sourceId)!;
-  const [text, setText] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(true);
-  useEffect(() => {
-    const abort = new AbortController();
-    const timer = setTimeout(() => abort.abort(), 12000);
-    setText(""); setError(""); setBusy(true);
-    let url: string;
-    try { url = buildRawUrl(item.sourceId, item.path); }
-    catch { setError("Este arquivo deve ser consultado na fonte original."); setBusy(false); clearTimeout(timer); return; }
-    fetch(url, { signal: abort.signal, credentials: "omit" })
-      .then(async response => {
-        if (!response.ok) throw new Error(`Origem indisponível (HTTP ${response.status})`);
-        if (Number(response.headers.get("content-length")) > 500000) throw new Error("Arquivo muito grande para prévia");
-        const raw = await response.text();
-        if (raw.length > 500000) throw new Error("Arquivo muito grande para prévia");
-        return raw;
-      })
-      .then(raw => setText(raw))
-      .catch(e => { if (!abort.signal.aborted) setError(e instanceof Error ? e.message : "Falha ao abrir o material"); })
-      .finally(() => { clearTimeout(timer); if (!abort.signal.aborted) setBusy(false); });
-    return () => { clearTimeout(timer); abort.abort(); };
-  }, [item.sourceId, item.path]);
-  const base = buildSourceUrl(item.sourceId, item.path);
-  const resolve = (href: string | undefined) => {
-    if (!href) return base;
-    if (/^https:\/\//i.test(href)) return href;
-    if (/^(?:#|mailto:)/i.test(href)) return base;
-    try {
-      const origin = new URL(base);
-      const combined = new URL(href, origin);
-      return combined.protocol === "https:" && combined.hostname === "github.com" ? combined.href : base;
-    } catch { return base; }
-  };
-  return <section className="mt-4 rounded-xl border bg-card p-3 sm:p-5" aria-label="Prévia do material externo">
-    <p className="mb-3 text-xs text-muted-foreground">
-      Prévia sob demanda, diretamente da fonte {source.name}. Elementos MDX, quizzes externos e vídeos não são executados aqui.
-    </p>
-    {busy && <p role="status" className="py-6">Carregando conteúdo da fonte original…</p>}
-    {error && <p role="alert" className="text-sm text-destructive">{error}. Use o link para ler no GitHub.</p>}
-    {!busy && !error && <div className="external-markdown max-w-none break-words text-sm leading-relaxed">
-      <Markdown skipHtml remarkPlugins={[remarkGfm]} components={{
-        a: ({href,children}) => <a href={resolve(href)} target="_blank" rel="noopener noreferrer" className="text-primary underline">{children}</a>,
-        img: ({alt}) => <span className="text-muted-foreground">[Imagem no material original: {alt || "abrir no GitHub"}]</span>,
-        code: ({children,className}) => <code className={className || "rounded bg-muted px-1 font-mono text-xs"}>{children}</code>,
-      }}>{text}</Markdown>
-    </div>}
-  </section>;
-}
 
 function Biblioteca() {
   const [sourceId, setSourceId] = useState("");
@@ -77,15 +26,22 @@ function Biblioteca() {
   const [category, setCategory] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<ExternalItem | null>(null);
-  const filtered = useMemo(() => filterExternalItems(sourceId, search, category), [sourceId, search, category]);
+  const [collection, setCollection] = useState("");
+  const openDocument=(source:string,path:string)=>{
+    const item=EXTERNAL_ITEMS.find(i=>i.sourceId===source&&i.path===path);
+    if(!item)return;setSourceId(source);setSearch("");setCategory("");setCollection("");
+    const sourceItems=filterExternalItems(source,"");setPage(Math.floor(sourceItems.indexOf(item)/PAGE)+1);setSelected(item);
+  };
+  useEffect(()=>{const query=new URLSearchParams(window.location.search);const source=query.get("source"),path=query.get("path");if(source&&path)openDocument(source,path);},[]);
+  const filtered = useMemo(() => filterExternalItems(sourceId, search, category).filter(i=>!collection||i.path.startsWith("roadmaps/"+collection+"/")), [sourceId, search, category, collection]);
   const categories = useMemo(() =>
     [...new Set(EXTERNAL_ITEMS.filter(x => !sourceId || x.sourceId === sourceId).map(x => x.category))].sort(), [sourceId]);
   const shown = filtered.slice((page - 1) * PAGE, page * PAGE);
   const maxPages = Math.max(1, Math.ceil(filtered.length / PAGE));
-  const selectSource = (next: string) => { setSourceId(next); setCategory(""); setPage(1); setSelected(null); };
+  const selectSource = (next: string) => { setSourceId(next); setCollection(""); setCategory(""); setPage(1); setSelected(null); };
   const selectSearch = (next: string) => { setSearch(next); setPage(1); };
   const selectCategory = (next: string) => { setCategory(next); setPage(1); };
-  const canPreview = (item: ExternalItem) => EXTERNAL_SOURCES.some(s => s.id === item.sourceId && s.previewAllowed) && /\.(md|mdx)$/i.test(item.path);
+  const canPreview = (item: ExternalItem) => SNAPSHOT_DOCUMENTS.some(d=>d.sourceId===item.sourceId&&d.path===item.path) || EXTERNAL_SOURCES.some(s => s.id === item.sourceId && s.previewAllowed) && /\.(md|mdx)$/i.test(item.path);
 
   return <div className="space-y-5">
     <div>
@@ -93,7 +49,7 @@ function Biblioteca() {
       <h1 className="mt-2 text-3xl font-extrabold">Biblioteca de conteúdos</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Índice dos quatro projetos de ensino: {EXTERNAL_ITEMS.length.toLocaleString("pt-BR")} referências oficiais,
-        sem copiar ou reivindicar autoria de textos, códigos, vídeos ou certificados.
+        {SNAPSHOT_DOCUMENTS.length} documentos integrais redistribuíveis incorporados, com autoria e licença preservadas. Os demais materiais continuam na fonte oficial.
         Aulas próprias e exercícios executáveis continuam nas <Link to="/trilhas" className="text-primary underline">trilhas do CódigoLab</Link>.
       </p>
     </div>
@@ -111,6 +67,13 @@ function Biblioteca() {
         </select>
       </label>
     </div>
+    {(sourceId==="aprenda-community"||!sourceId)&&<label className="block text-sm font-semibold">Percurso completo do Aprenda Community
+      <select aria-label="Selecionar percurso incorporado" value={collection} onChange={e=>{setCollection(e.target.value);setPage(1);setSelected(null);}} className="mt-1 w-full rounded-lg border bg-background p-3">
+        <option value="">Todos os percursos ({SNAPSHOT_COLLECTIONS.length})</option>
+        {SNAPSHOT_COLLECTIONS.map(c=><option key={c.id} value={c.id}>{c.title} · {c.nodes.length} tópicos</option>)}
+      </select>
+    </label>}
+    {collection&&<section className="card-surface rounded-lg p-4"><h2 className="font-bold">{SNAPSHOT_COLLECTIONS.find(c=>c.id===collection)?.title}</h2><p className="mt-1 text-sm">{SNAPSHOT_COLLECTIONS.find(c=>c.id===collection)?.description}</p><ol className="mt-3 grid list-inside list-decimal gap-2 text-sm sm:grid-cols-2">{SNAPSHOT_COLLECTIONS.find(c=>c.id===collection)?.nodes.map(n=><li key={n.id}><button className="text-primary underline" onClick={()=>openDocument("aprenda-community",n.path)}>{n.title}</button></li>)}</ol></section>}
     <label className="block text-sm font-semibold">Pesquisar assunto, tecnologia ou nome de arquivo
       <input type="search" value={search} onChange={e => selectSearch(e.target.value)}
         placeholder="Ex.: redes, segurança, Python, Git, React" className="mt-1 w-full rounded-lg border bg-background p-3"
@@ -139,7 +102,7 @@ function Biblioteca() {
               <a href={link} target="_blank" rel="noopener noreferrer" className="btn btn-ghost text-xs" aria-label={`Abrir ${item.title} na fonte original`}>Ver original ↗</a>
             </div>
           </div>
-          {selected?.sourceId === item.sourceId && selected.path === item.path && <MarkdownPreview key={item.path} item={item}/>}
+          {selected?.sourceId === item.sourceId && selected.path === item.path && <ImportedLesson key={item.path} item={item} onOpen={openDocument}/>}
         </li>;
       })}
     </ul>
@@ -158,7 +121,7 @@ function Biblioteca() {
           <a href={source.website} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline">Visitar fonte oficial ↗</a>
         </details>
       )}
-      <p className="text-xs text-muted-foreground">Este é um índice dos arquivos e blocos identificados em 02/11/2026, não uma cópia integral das quatro plataformas. O freeCodeCamp inclui blocos com numerosos exercícios internos, disponíveis no repositório e na plataforma oficial. Os repositórios podem receber atualizações posteriormente.</p>
+      <p className="text-xs text-muted-foreground">Índice de 02/11/2026 com snapshots de UBL e dos conteúdos expressamente autorizados em roadmaps/** do Aprenda. Licenças e hashes estão no manifesto local. Os projetos e bootcamps Aprenda fora desse escopo, 30 Dias de Python (sem licença de redistribuição identificada) e currículo freeCodeCamp (copyright próprio) permanecem referências oficiais. O freeCodeCamp inclui blocos com numerosos exercícios internos, disponíveis no repositório e na plataforma oficial. Os repositórios podem receber atualizações posteriormente.</p>
     </section>
   </div>;
 }

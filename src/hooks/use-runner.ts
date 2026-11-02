@@ -1,5 +1,5 @@
 import { useCallback, useState, useSyncExternalStore } from "react";
-import { getPyStatus, runCode, stopCurrent, subscribePy, ensurePython, getPyError, type Lang, type OutChunk, type RunResult } from "@/lib/runtime";
+import { getPyStatus, runCode, stopCurrent, subscribePy, ensurePython, getPyError, type Lang, type OutChunk, type RunResult, type RunOptions } from "@/lib/runtime";
 
 export function usePyStatus() {
   return useSyncExternalStore(subscribePy, getPyStatus, () => "idle" as const);
@@ -16,7 +16,7 @@ export function useRunner() {
   const [running, setRunning] = useState(false);
   const [last, setLast] = useState<RunResult | null>(null);
 
-  const run = useCallback(async (lang: Lang, code: string, opts: { stdin?: string | undefined; timeoutMs: number }) => {
+  const run = useCallback(async (lang: Lang, code: string, opts: Omit<RunOptions, "onChunk">) => {
     setChunks([]); setRunning(true); setLast(null);
     const res = await runCode(lang, code, { ...opts, onChunk: (c) => setChunks((p) => [...p, c]) });
     if (STATUS_MSG[res.status]) {
