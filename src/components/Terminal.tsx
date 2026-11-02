@@ -1,7 +1,7 @@
 import type { OutChunk } from "@/lib/runtime";
 import { explainError } from "@/lib/content/glossary";
 
-export function Terminal({ chunks, footer, placeholder = "A saída do programa aparece aqui." }: { chunks: OutChunk[]; footer?: string; placeholder?: string }) {
+export function Terminal({ chunks, footer, placeholder = "A saída do programa aparece aqui." }: { chunks: OutChunk[]; footer?: string | undefined; placeholder?: string }) {
   const stderr = chunks.filter((c) => c.stream === "stderr").map((c) => c.text).join("");
   const tip = stderr ? explainError(stderr) : undefined;
   return (

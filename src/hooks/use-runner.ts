@@ -16,7 +16,7 @@ export function useRunner() {
   const [running, setRunning] = useState(false);
   const [last, setLast] = useState<RunResult | null>(null);
 
-  const run = useCallback(async (lang: Lang, code: string, opts: { stdin?: string; timeoutMs: number }) => {
+  const run = useCallback(async (lang: Lang, code: string, opts: { stdin?: string | undefined; timeoutMs: number }) => {
     setChunks([]); setRunning(true); setLast(null);
     const res = await runCode(lang, code, { ...opts, onChunk: (c) => setChunks((p) => [...p, c]) });
     if (STATUS_MSG[res.status]) {

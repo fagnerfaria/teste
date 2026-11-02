@@ -113,7 +113,7 @@ export function stopCurrent() { current?.cancel(); }
 export async function runCode(
   lang: Lang,
   code: string,
-  opts: { stdin?: string; timeoutMs: number; onChunk?: (c: OutChunk) => void },
+  opts: { stdin?: string | undefined; timeoutMs: number; onChunk?: (c: OutChunk) => void },
 ): Promise<RunResult> {
   current?.cancel();
   let worker: Worker;
