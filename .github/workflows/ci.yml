@@ -54,6 +54,11 @@ jobs:
         env:
           CODIGOLAB_URL: https://84aeb43e.codigolab.pages.dev
         run: bun scripts/smoke.mjs
+      - name: Verificar SQL WASM real e biblioteca na prévia Cloudflare
+        if: github.ref == 'refs/heads/codigolab-sql-20261102'
+        env:
+          CODIGOLAB_URL: https://12ff11aa.codigolab.pages.dev
+        run: bun scripts/smoke.mjs
       - name: Prepare static build in isolated branch
         if: github.ref == 'refs/heads/codigolab'
         run: |
