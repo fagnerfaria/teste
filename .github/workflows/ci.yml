@@ -52,7 +52,7 @@ jobs:
       - name: Testar biblioteca, execução e PWA na prévia Cloudflare
         if: github.ref == 'refs/heads/codigolab-integracao-20261102'
         env:
-          CODIGOLAB_URL: https://7d28054f.codigolab.pages.dev
+          CODIGOLAB_URL: https://84aeb43e.codigolab.pages.dev
         run: bun scripts/smoke.mjs
       - name: Prepare static build in isolated branch
         if: github.ref == 'refs/heads/codigolab'

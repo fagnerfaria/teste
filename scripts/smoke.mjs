@@ -55,6 +55,13 @@ try {
     const sw=await page.request.get(url+"/sw.js");
     if(sw.status()!==200||!sw.headers()["content-type"]?.includes("javascript"))throw new Error("Service worker inválido");
   });
+  await runTest("Aprofundamento ligado aos quatro cursos por trilha",async()=>{
+    await page.goto(url+"/trilhas/web",{waitUntil:"domcontentloaded"});
+    await page.getByRole("heading",{name:"Materiais externos relacionados"}).waitFor();
+    await page.getByRole("heading",{name:"Referências por tema nesta trilha"}).waitFor();
+    const links=page.getByRole("link",{name:/↗/});
+    if(await links.count()<4)throw new Error("Referências insuficientes na trilha web");
+  });
   await runTest("Simulação passo a passo",async()=>{
     await page.goto(url+"/lab",{waitUntil:"domcontentloaded"});
     await page.getByRole("tab",{name:/Simular passo a passo/}).click();
