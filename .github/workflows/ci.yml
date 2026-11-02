@@ -1,7 +1,7 @@
 name: CodigoLab CI
 on:
   push:
-    branches: [codigolab, codigolab-audit-20261102]
+    branches: [codigolab, codigolab-audit-20261102, codigolab-curriculum-20261102]
 permissions:
   contents: write
 jobs:
