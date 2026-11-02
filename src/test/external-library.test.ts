@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EXTERNAL_SOURCES, EXTERNAL_ITEMS, buildSourceUrl, normalizeExternalPath } from "../lib/content/external-library";
+import { EXTERNAL_SOURCES, EXTERNAL_ITEMS, buildSourceUrl, normalizeExternalPath, recommendedExternal } from "../lib/content/external-library";
 
 describe("Biblioteca externa com atribuição e cobertura verificável", () => {
   it("indexa as quatro fontes oficiais, preservando autoria e licença", () => {
@@ -22,6 +22,16 @@ describe("Biblioteca externa com atribuição e cobertura verificável", () => {
     expect(aprenda.filter(x => x.path.includes("/nodes/")).length).toBeGreaterThanOrEqual(450);
     expect(aprenda.filter(x => x.path.startsWith("projects/")).length).toBeGreaterThanOrEqual(17);
     expect(fcc.filter(x => x.kind === "directory").length).toBeGreaterThanOrEqual(500);
+  });
+  it("oferece referências de aprofundamento para todas as trilhas sem desviar de origem",()=>{
+    for(const id of ["fundamentos","python-pro","web","engenharia","automacao","ia-agentes"]){
+      const refs=recommendedExternal(id,12);
+      expect(refs.length).toBeGreaterThanOrEqual(3);
+      expect(refs.length).toBeLessThanOrEqual(12);
+      expect(new Set(refs.map(x=>x.sourceId+":"+x.path)).size).toBe(refs.length);
+      for(const ref of refs) expect(buildSourceUrl(ref.sourceId,ref.path,ref.kind)).toMatch(/^https:\/\/github\.com\//);
+    }
+    expect(recommendedExternal("inexistente")).toEqual([]);
   });
   it("não aceita path traversal e nunca constrói links fora dos repositórios", () => {
     expect(() => normalizeExternalPath("../secret")).toThrow();
