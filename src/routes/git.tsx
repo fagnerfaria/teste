@@ -12,6 +12,7 @@ export const Route=createFileRoute("/git")({
 
 type GitModule=typeof import("isomorphic-git");
 type BrowserFS = Parameters<GitModule["init"]>[0]["fs"] & {
+ flush?:()=>Promise<void>;
  promises: {
   mkdir(path:string):Promise<unknown>;
   stat(path:string):Promise<unknown>;
@@ -77,6 +78,7 @@ function GitLab(){
      await git.add({fs,dir:DIR,filepath:FILE});
      await git.commit({fs,dir:DIR,author:identity,message:"Primeiro commit: adiciona README"});
     }
+    if(typeof fs.flush==="function")await fs.flush();
     if(active)await refresh(ctx);
    }catch(e){if(active)setError(e instanceof Error?e.message:"Não foi possível iniciar Git local.");}
    finally{if(active)setLoading(false);}
@@ -91,6 +93,7 @@ function GitLab(){
   void (async()=>{
    try{
     const result=await fn(ctx);
+    if(typeof ctx.fs.flush==="function")await ctx.fs.flush();
     await refresh(ctx);
     setNotice(result);
    }catch(e){setError(e instanceof Error?e.message:String(e));}
