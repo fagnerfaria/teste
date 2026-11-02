@@ -66,19 +66,19 @@ function validEntries(v: unknown, check: (item: unknown) => boolean): boolean {
 }
 
 export function validateBackup(x: unknown): x is AppData {
-  if (!isRecord(x) || x.version !== 1) return false;
-  if (!validEntries(x.completedLessons, finiteNonnegative)) return false;
-  if (!validEntries(x.openedLessons, finiteNonnegative)) return false;
-  if (!validEntries(x.passedExercises, finiteNonnegative)) return false;
-  if (!validEntries(x.drafts, (v) => typeof v === "string" && v.length <= 200000)) return false;
-  if (!validEntries(x.checklist, (v) => typeof v === "boolean")) return false;
-  if (!Array.isArray(x.attempts) || x.attempts.length > 10000 ||
-      !x.attempts.every((a: unknown) =>
-        isRecord(a) && typeof a.exerciseId === "string" &&
-        typeof a.ok === "boolean" && finiteNonnegative(a.ts))) return false;
-  if (typeof x.timeoutMs !== "number" || ![2000, 5000, 10000, 30000].includes(x.timeoutMs)) return false;
-  if (x.theme !== "light" && x.theme !== "dark") return false;
-  if (x.lastLesson !== undefined && typeof x.lastLesson !== "string") return false;
+  if (!isRecord(x) || x["version"] !== 1) return false;
+  if (!validEntries(x["completedLessons"], finiteNonnegative)) return false;
+  if (!validEntries(x["openedLessons"], finiteNonnegative)) return false;
+  if (!validEntries(x["passedExercises"], finiteNonnegative)) return false;
+  if (!validEntries(x["drafts"], (v) => typeof v === "string" && v.length <= 200000)) return false;
+  if (!validEntries(x["checklist"], (v) => typeof v === "boolean")) return false;
+  if (!Array.isArray(x["attempts"]) || x["attempts"].length > 10000 ||
+      !x["attempts"].every((a: unknown) =>
+        isRecord(a) && typeof a["exerciseId"] === "string" &&
+        typeof a["ok"] === "boolean" && finiteNonnegative(a["ts"]))) return false;
+  if (typeof x["timeoutMs"] !== "number" || ![2000, 5000, 10000, 30000].includes(x["timeoutMs"])) return false;
+  if (x["theme"] !== "light" && x["theme"] !== "dark") return false;
+  if (x["lastLesson"] !== undefined && typeof x["lastLesson"] !== "string") return false;
   return true;
 }
 
