@@ -36,6 +36,16 @@ try {
       await page.getByRole("heading",{name:new RegExp(name)}).first().waitFor();
     }
   });
+  await runTest("Biblioteca externa: filtro, links e integridade mobile",async()=>{
+    await page.goto(url+"/biblioteca",{waitUntil:"domcontentloaded"});
+    await page.getByRole("heading",{name:"Biblioteca de conteúdos"}).waitFor();
+    await page.getByLabel("Selecionar fonte").selectOption("aprenda-community");
+    await page.getByLabel("Pesquisar na biblioteca").fill("typescript");
+    const links=page.getByRole("link",{name:/Abrir .* na fonte original/});
+    await links.first().waitFor();
+    const href=await links.first().getAttribute("href");
+    if(!href?.startsWith("https://github.com/lucianodiisouza/aprenda-community/"))throw new Error("Link atribuído à fonte errada: "+href);
+  });
   await runTest("Simulação passo a passo",async()=>{
     await page.goto(url+"/lab",{waitUntil:"domcontentloaded"});
     await page.getByRole("tab",{name:/Simular passo a passo/}).click();

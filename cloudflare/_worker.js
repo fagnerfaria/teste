@@ -10,7 +10,7 @@ const CSP = [
   // script-src sem unsafe-eval/unsafe-inline sem refatorar os executores.
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net",
   "worker-src 'self' blob:",
-  "connect-src 'self' https://cdn.jsdelivr.net",
+  "connect-src 'self' https://cdn.jsdelivr.net https://raw.githubusercontent.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob:",
