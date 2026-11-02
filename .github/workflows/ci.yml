@@ -113,3 +113,13 @@ jobs:
           git add -f dist
           git commit -m "build: validated responsive workspace candidate [skip ci]"
           git push origin HEAD:refs/heads/codigolab-web-workspace-dist --force
+
+      - name: Preparar build do laboratório Git para Cloudflare
+        if: github.ref == 'refs/heads/codigolab-git-lab-20261102'
+        run: |
+          git config user.name "CodigoLab CI"
+          git config user.email "actions@users.noreply.github.com"
+          git switch -C codigolab-git-dist
+          git add -f dist
+          git commit -m "build: browser Git lab validated [skip ci]"
+          git push origin HEAD:refs/heads/codigolab-git-dist --force
