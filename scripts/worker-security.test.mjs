@@ -27,5 +27,7 @@ try{
    "O Worker precisa retornar o conteúdo do arquivo original");
  assert.ok(upstreamRequests.at(-1)?.endsWith("/assets/index-TEST.js"),
    "A URL do script deve chegar ao CDN sem ser trocada por index.html");
+ assert.match(upstreamRequests.at(-1)||"", /@[0-9a-f]{40}\/dist\/assets\/index-TEST\.js$/,
+   "O CDN deve apontar para um commit imutável, não para branch com cache antigo");
  console.log("Política HTTP do Worker e assets JS validada");
 }finally{globalThis.fetch=originalFetch}
