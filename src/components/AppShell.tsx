@@ -14,6 +14,7 @@ const MORE = [
  { to:"/percurso",label:"Percurso inicial" },
  { to:"/cursos",label:"Cursos externos" },
  { to:"/biblioteca",label:"Biblioteca de referências" },
+ { to:"/sql",label:"Laboratório SQL" },
  { to:"/glossario",label:"Glossário" },
  { to:"/dados",label:"Meus dados" },
 ] as const;

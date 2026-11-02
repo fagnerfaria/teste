@@ -62,6 +62,18 @@ try {
     const links=page.getByRole("link",{name:/↗/});
     if(await links.count()<4)throw new Error("Referências insuficientes na trilha web");
   });
+  await runTest("SQLite real no laboratório SQL",async()=>{
+    await page.goto(url+"/sql",{waitUntil:"domcontentloaded"});
+    await page.getByRole("heading",{name:"SQL com execução real"}).waitFor({timeout:15000});
+    await page.getByRole("button",{name:"▶ Executar SQL"}).click();
+    await page.getByText("Consulta executada.",{exact:false}).waitFor({timeout:90000});
+    const table=page.getByRole("table");
+    await table.getByText("Ana",{exact:true}).waitFor();
+    await page.getByLabel("Exercício SQL").selectOption("2");
+    await page.getByRole("button",{name:"▶ Executar SQL"}).click();
+    await page.getByText("Consulta executada.",{exact:false}).waitFor({timeout:90000});
+    await page.getByRole("columnheader",{name:"media"}).waitFor();
+  });
   await runTest("Simulação passo a passo",async()=>{
     await page.goto(url+"/lab",{waitUntil:"domcontentloaded"});
     await page.getByRole("tab",{name:/Simular passo a passo/}).click();
