@@ -51,9 +51,35 @@ export function useData() {
   );
 }
 
+/** Valida a estrutura completa antes de substituir o progresso local. */
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  v !== null && typeof v === "object" && !Array.isArray(v) &&
+  (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null);
+
+const finiteNonnegative = (v: unknown): v is number =>
+  typeof v === "number" && Number.isFinite(v) && v >= 0;
+
+function validEntries(v: unknown, check: (item: unknown) => boolean): boolean {
+  return isRecord(v) &&
+    Object.keys(v).length <= 10000 &&
+    Object.values(v).every(check);
+}
+
 export function validateBackup(x: unknown): x is AppData {
-  return !!x && typeof x === "object" && (x as AppData).version === 1 &&
-    typeof (x as AppData).completedLessons === "object" && typeof (x as AppData).drafts === "object";
+  if (!isRecord(x) || x.version !== 1) return false;
+  if (!validEntries(x.completedLessons, finiteNonnegative)) return false;
+  if (!validEntries(x.openedLessons, finiteNonnegative)) return false;
+  if (!validEntries(x.passedExercises, finiteNonnegative)) return false;
+  if (!validEntries(x.drafts, (v) => typeof v === "string" && v.length <= 200000)) return false;
+  if (!validEntries(x.checklist, (v) => typeof v === "boolean")) return false;
+  if (!Array.isArray(x.attempts) || x.attempts.length > 10000 ||
+      !x.attempts.every((a: unknown) =>
+        isRecord(a) && typeof a.exerciseId === "string" &&
+        typeof a.ok === "boolean" && finiteNonnegative(a.ts))) return false;
+  if (typeof x.timeoutMs !== "number" || ![2000, 5000, 10000, 30000].includes(x.timeoutMs)) return false;
+  if (x.theme !== "light" && x.theme !== "dark") return false;
+  if (x.lastLesson !== undefined && typeof x.lastLesson !== "string") return false;
+  return true;
 }
 
 export const saveDraft = (key: string, code: string) => update((d) => ({ ...d, drafts: { ...d.drafts, [key]: code } }));
