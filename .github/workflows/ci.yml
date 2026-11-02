@@ -32,6 +32,11 @@ jobs:
             sleep 1
           done
           CODIGOLAB_URL=http://127.0.0.1:4173 bun scripts/smoke.mjs
+      - name: Smoke test HTTPS da prévia com CSP ativada
+        if: github.ref == 'refs/heads/codigolab-audit-20261102'
+        env:
+          CODIGOLAB_URL: https://eba9f8be.codigolab.pages.dev
+        run: bun scripts/smoke.mjs
       - name: Prepare static build in isolated branch
         if: github.ref == 'refs/heads/codigolab'
         run: |
