@@ -16,6 +16,12 @@ jobs:
       - run: bun run build
       - run: bun run typecheck
       - run: bun run test --passWithNoTests
+      - name: Instalar navegador para smoke test
+        run: |
+          bun add -d playwright
+          bunx playwright install chromium
+      - name: Smoke test em navegador real (Cloudflare)
+        run: bun scripts/smoke.mjs
       - name: Prepare static build in isolated branch
         run: |
           git config user.name "CodigoLab CI"
