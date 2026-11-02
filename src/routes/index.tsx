@@ -19,11 +19,12 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const d = useData();
-  const done = Object.keys(d.completedLessons).length;
+  const baseDone = LESSONS.filter((l) => !!d.completedLessons[l.id]).length;
+  const advancedDone = Object.keys(d.completedLessons).filter(k => k.startsWith("unit:")).length;
   const passed = Object.keys(d.passedExercises).length;
   const next = LESSONS.find((l) => !d.completedLessons[l.id]) ?? LESSONS[LESSONS.length - 1];
   const current = (d.lastLesson && lessonById(d.lastLesson) && !d.completedLessons[d.lastLesson] ? lessonById(d.lastLesson) : next)!;
-  const pct = Math.round((done / LESSONS.length) * 100);
+  const pct = Math.min(100,Math.round((baseDone / LESSONS.length) * 100));
 
   return (
     <div className="space-y-6">
@@ -31,10 +32,10 @@ function Home() {
         <p className="text-sm font-semibold text-primary">Percurso guiado · Lógica e Python</p>
         <h1 className="mt-1 text-3xl font-extrabold md:text-4xl">Continuar estudando</h1>
         <p className="mt-2 text-muted-foreground">Próxima aula: <strong className="text-foreground">{current.title}</strong> (semana {current.week})</p>
-        <div className="mt-4 h-3 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso geral">
+        <div className="mt-4 h-3 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso do curso inicial de Python">
           <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">{done} de {LESSONS.length} aulas concluídas · {passed} de {EXERCISES.length} exercícios resolvidos</p>
+        <p className="mt-1 text-sm text-muted-foreground">{baseDone} de {LESSONS.length} aulas introdutórias concluídas · {advancedDone} unidades avançadas · {passed} exercícios aprovados</p>
         <div className="mt-5 flex flex-wrap gap-2">
           <Link to="/aulas/$id" params={{ id: current.id }} className="btn btn-primary">Estudar “{current.title}”</Link>
           <Link to="/lab" className="btn btn-accent text-base">▶ Abrir laboratório</Link>
@@ -47,6 +48,7 @@ function Home() {
         <div className="flex flex-wrap gap-2">
           <Link to="/trilhas" className="btn btn-primary">Explorar seis trilhas →</Link>
           <Link to="/projetos" className="btn btn-ghost">Ver projetos práticos →</Link>
+          <Link to="/workspace" className="btn btn-accent">Abrir editor com múltiplos arquivos →</Link>
         </div>
       </section>
       <div className="grid gap-4 md:grid-cols-2">

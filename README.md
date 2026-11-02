@@ -18,3 +18,10 @@ PWA: instalação pelo navegador compatível, com cache de páginas e assets pr�
 
 ### Laboratório SQLite real
 A rota `/sql` executa consultas reais num banco SQLite WASM via sql.js v1.14.2 (MIT). Funciona por Web Worker separado, com limite de 20 segundos, banco fictício recriado a cada consulta, no máximo 100 linhas exibidas. Não usa credenciais nem arquivos do aparelho. O carregamento inicial depende da CDN jsDelivr e de um navegador com WebAssembly.
+
+
+## Plataforma web (sem aplicativo Android obrigatório)
+
+A rota `/workspace` oferece uma IDE educativa de navegador com até 50 arquivos por projeto, modelos separados de HTML/CSS/JS, Python e JavaScript, editor, backup JSON e dados locais. Projetos web combinam arquivos em prévia `iframe sandbox="allow-scripts"` com política de segurança sem rede nem origem. Nos projetos Python e JS o arquivo principal é executado de verdade em Worker, mas imports entre arquivos **não** são suportados neste estágio; os demais arquivos servem à organização e edição. A instalação como PWA é opcional, não um requisito de uso. A experiência é responsiva para desktop, tablet e celular.
+
+Para publicação direta e sem proxy, a Cloudflare recomenda `wrangler pages deploy dist --project-name=codigolab` em GitHub Actions com `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` cadastrados em Secrets. Nunca colocar o token em arquivo commitado.

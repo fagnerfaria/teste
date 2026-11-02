@@ -5,11 +5,12 @@ import { update, useData } from "@/lib/store";
 const MAIN = [
  { to:"/",label:"Início",icon:"⌂" },
  { to:"/trilhas",label:"Trilhas",icon:"▦" },
- { to:"/aulas",label:"Aulas",icon:"▤" },
+ { to:"/workspace",label:"Editor",icon:"⌘" },
  { to:"/lab",label:"Laboratório",icon:"▶" },
  { to:"/projetos",label:"Projetos",icon:"◇" },
 ] as const;
 const MORE = [
+ { to:"/aulas",label:"Aulas introdutórias" },
  { to:"/exercicios",label:"Exercícios" },
  { to:"/percurso",label:"Percurso inicial" },
  { to:"/cursos",label:"Cursos externos" },

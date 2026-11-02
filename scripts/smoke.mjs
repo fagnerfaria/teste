@@ -74,7 +74,30 @@ try {
     await page.getByText("Consulta executada.",{exact:false}).waitFor({timeout:90000});
     await page.getByRole("columnheader",{name:"media"}).waitFor();
   });
-  await runTest("Simulação passo a passo",async()=>{
+  await runTest("Editor web com três arquivos, CSS e JavaScript reais",async()=>{
+    await page.goto(url+"/workspace",{waitUntil:"domcontentloaded"});
+    await page.getByRole("heading",{name:"Projetos e arquivos"}).waitFor({timeout:20000});
+    await page.getByRole("button",{name:/index\.html/}).waitFor();
+    await page.getByRole("button",{name:/styles\.css/}).waitFor();
+    await page.getByRole("button",{name:/app\.js/}).waitFor();
+    await page.getByRole("button",{name:"▶ Atualizar prévia"}).click();
+    const iframe=page.frameLocator('iframe[title="Prévia isolada do projeto web"]');
+    await iframe.getByRole("heading",{name:"Meu primeiro site"}).waitFor();
+    await iframe.getByRole("button",{name:"Testar interação"}).click();
+    await iframe.getByText("JavaScript funcionando!").waitFor();
+  });
+  await runTest("Criação de arquivos e persistência no editor web",async()=>{
+    await page.getByLabel("Nome do novo arquivo").fill("src/notas.md");
+    await page.getByRole("button",{name:"+ Adicionar arquivo"}).click();
+    await page.getByRole("button",{name:"src/notas.md"}).waitFor();
+    await page.getByLabel("Editor src/notas.md").fill("Meu rascunho persistente");
+    await page.reload({waitUntil:"domcontentloaded"});
+    await page.getByRole("button",{name:"src/notas.md"}).click();
+    await page.getByLabel("Editor src/notas.md").waitFor();
+    const content=await page.getByLabel("Editor src/notas.md").inputValue();
+    if(content!=="Meu rascunho persistente")throw Error("Arquivo não persistiu: "+content);
+  });
+    await runTest("Simulação passo a passo",async()=>{
     await page.goto(url+"/lab",{waitUntil:"domcontentloaded"});
     await page.getByRole("tab",{name:/Simular passo a passo/}).click();
     await page.getByText(/Passo 1\//).waitFor();
