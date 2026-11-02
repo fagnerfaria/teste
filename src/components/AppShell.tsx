@@ -16,6 +16,7 @@ const MORE = [
  { to:"/cursos",label:"Cursos externos" },
  { to:"/biblioteca",label:"Biblioteca de referências" },
  { to:"/sql",label:"Laboratório SQL" },
+ { to:"/git",label:"Praticar Git real" },
  { to:"/glossario",label:"Glossário" },
  { to:"/dados",label:"Meus dados" },
 ] as const;

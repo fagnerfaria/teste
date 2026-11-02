@@ -97,6 +97,24 @@ try {
     const content=await page.getByLabel("Editor src/notas.md").inputValue();
     if(content!=="Meu rascunho persistente")throw Error("Arquivo não persistiu: "+content);
   });
+    await runTest("Git real: commit, branch e histórico persistente",async()=>{
+    await page.goto(url+"/git",{waitUntil:"domcontentloaded"});
+    await page.getByRole("heading",{name:"Laboratório Git local"}).waitFor({timeout:25000});
+    const editor=page.getByLabel("Conteúdo do README.md");
+    await editor.fill("# Exercício Git\n\nMeu commit de teste.\n");
+    await page.getByRole("button",{name:"Salvar arquivo"}).click();
+    await page.getByRole("button",{name:"git add README.md"}).click();
+    await page.getByLabel("Mensagem do commit").fill("Aprende a criar commits");
+    await page.getByRole("button",{name:"git commit",exact:true}).click();
+    await page.getByText("Aprende a criar commits").waitFor({timeout:25000});
+    await page.getByRole("button",{name:/git branch · criar/}).click();
+    await page.getByRole("button",{name:/feature\/testes/}).waitFor();
+    await page.getByRole("button",{name:/feature\/testes/}).click();
+    await page.getByText("Branch: feature/testes").waitFor();
+    await page.reload({waitUntil:"domcontentloaded"});
+    await page.getByText("Branch: feature/testes").waitFor({timeout:25000});
+    await page.getByText("Aprende a criar commits").waitFor();
+  });
     await runTest("Simulação passo a passo",async()=>{
     await page.goto(url+"/lab",{waitUntil:"domcontentloaded"});
     await page.getByRole("tab",{name:/Simular passo a passo/}).click();

@@ -44,5 +44,6 @@ function TrackPage(){
     <Link to="/biblioteca" className="btn btn-ghost text-sm">Pesquisar todas as referências →</Link>
    </section>
    <Link to="/projetos" className="btn btn-ghost">Praticar com projetos →</Link>
+   {id==="engenharia"&&<Link to="/git" className="btn btn-primary">Abrir laboratório Git real →</Link>}
  </div>;
 }

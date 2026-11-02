@@ -25,3 +25,8 @@ A rota `/sql` executa consultas reais num banco SQLite WASM via sql.js v1.14.2 (
 A rota `/workspace` oferece uma IDE educativa de navegador com até 50 arquivos por projeto, modelos separados de HTML/CSS/JS, Python e JavaScript, editor, backup JSON e dados locais. Projetos web combinam arquivos em prévia `iframe sandbox="allow-scripts"` com política de segurança sem rede nem origem. Nos projetos Python e JS o arquivo principal é executado de verdade em Worker, mas imports entre arquivos **não** são suportados neste estágio; os demais arquivos servem à organização e edição. A instalação como PWA é opcional, não um requisito de uso. A experiência é responsiva para desktop, tablet e celular.
 
 Para publicação direta e sem proxy, a Cloudflare recomenda `wrangler pages deploy dist --project-name=codigolab` em GitHub Actions com `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` cadastrados em Secrets. Nunca colocar o token em arquivo commitado.
+
+
+## Laboratório Git real no navegador
+
+Em `/git`, usa `isomorphic-git` e `@isomorphic-git/lightning-fs` (MIT) com sistema de arquivos virtual persistente em IndexedDB. Comandos funcionais: `git init`, salvar README, `git add`, `git commit`, `git branch`, `git checkout`, `git status` e `git log`. Não oferece acesso remoto, clone, push, terminal do sistema nem autenticação GitHub. Não substitui Git instalado em projetos profissionais, mas permite executar os conceitos centrais sem instalar programas.
