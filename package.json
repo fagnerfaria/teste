@@ -80,7 +80,8 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "isomorphic-git": "^1.44.9",
-    "@isomorphic-git/lightning-fs": "^4.10.3"
+    "@isomorphic-git/lightning-fs": "^4.10.3",
+    "buffer": "^6.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",

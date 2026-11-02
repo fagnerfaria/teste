@@ -59,6 +59,9 @@ function GitLab(){
   let active=true;
   void (async()=>{
    try{
+    const { Buffer: BufferPolyfill }=await import("buffer");
+    const scope=globalThis as typeof globalThis & {Buffer?:typeof BufferPolyfill};
+    scope.Buffer ??= BufferPolyfill;
     const [{default: LightningFS},git]=await Promise.all([
      import("@isomorphic-git/lightning-fs"),import("isomorphic-git"),
     ]);
