@@ -114,6 +114,11 @@ jobs:
           git commit -m "build: validated responsive workspace candidate [skip ci]"
           git push origin HEAD:refs/heads/codigolab-web-workspace-dist --force
 
+      - name: Testar fluxo Git e regressões na prévia Cloudflare
+        if: github.ref == 'refs/heads/codigolab-git-lab-20261102'
+        env:
+          CODIGOLAB_URL: https://8e264b41.codigolab.pages.dev
+        run: bun scripts/smoke.mjs
       - name: Preparar build do laboratório Git para Cloudflare
         if: github.ref == 'refs/heads/codigolab-git-lab-20261102'
         run: |
