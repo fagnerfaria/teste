@@ -46,6 +46,15 @@ try {
     const href=await links.first().getAttribute("href");
     if(!href?.startsWith("https://github.com/lucianodiisouza/aprenda-community/"))throw new Error("Link atribuído à fonte errada: "+href);
   });
+  await runTest("PWA: manifest e service worker corretos",async()=>{
+    const manifest=await page.request.get(url+"/manifest.webmanifest");
+    if(manifest.status()!==200 || !manifest.headers()["content-type"]?.includes("application/manifest+json"))
+      throw new Error("PWA manifest inválido: "+manifest.status()+", "+manifest.headers()["content-type"]);
+    const data=await manifest.json();
+    if(data.display!=="standalone"||!data.icons?.length)throw new Error("Manifest sem dados de instalação");
+    const sw=await page.request.get(url+"/sw.js");
+    if(sw.status()!==200||!sw.headers()["content-type"]?.includes("javascript"))throw new Error("Service worker inválido");
+  });
   await runTest("Simulação passo a passo",async()=>{
     await page.goto(url+"/lab",{waitUntil:"domcontentloaded"});
     await page.getByRole("tab",{name:/Simular passo a passo/}).click();
@@ -115,6 +124,15 @@ try {
     await editor.fill('const produto="Livro"; let quantidade=2; quantidade++; console.log(produto, quantidade);');
     await page.getByRole("button",{name:/Corrigir \(executa de verdade\)/}).click();
     await page.getByText(/Todos os casos passaram/).waitFor({timeout:30000});
+  });
+  await runTest("Rascunhos de projetos persistem após recarga",async()=>{
+    await page.goto(url+"/projetos/proj-calculadora",{waitUntil:"domcontentloaded"});
+    const edit=page.locator(".cm-content").last();
+    await edit.waitFor({timeout:15000});
+    await edit.fill('print("projeto salvo")');
+    await page.reload({waitUntil:"domcontentloaded"});
+    const value=await page.locator(".cm-content").last().innerText();
+    if(!value.includes('print("projeto salvo")'))throw new Error("Código editado não persistiu");
   });
   await runTest("Projetos e checklist funcional", async()=>{
     await page.goto(url+"/projetos/proj-calculadora",{waitUntil:"domcontentloaded"});
