@@ -3,10 +3,26 @@ const url = process.env.CODIGOLAB_URL || "https://codigolab.pages.dev";
 const errors=[];
 const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 const page=await browser.newPage({viewport:{width:390,height:844}});
+const networkErrors=[];
+const browserMessages=[];
+page.on("console",m=>{if(m.type()==="error"||m.type()==="warning") browserMessages.push(m.type()+": "+m.text());});
+page.on("requestfailed",r=>networkErrors.push(r.url()+" => "+(r.failure()?.errorText||"falha")));
+page.on("response",r=>{if(r.status()>=400) networkErrors.push("HTTP "+r.status()+" "+r.url());});
 page.on("pageerror",e=>errors.push(e.message));
 async function runTest(name,task){
   console.log("TESTE:",name);
-  await task();
+  try { await task(); } catch(error) {
+    console.error("DIAGNÓSTICO",name,JSON.stringify({
+      currentUrl:page.url(),
+      title:await page.title().catch(()=>"(falhou)"),
+      body:(await page.locator("body").innerText().catch(() => "(inacessível)")).slice(0,1600),
+      scripts:await page.locator("script[src]").evaluateAll(els=>els.map(e=>e.getAttribute("src"))).catch(()=>[]),
+      networkErrors:networkErrors.slice(-20),
+      browserMessages:browserMessages.slice(-20),
+      pageErrors:errors.slice(-20)
+    }));
+    throw error;
+  }
   console.log("PASSOU:",name);
 }
 try {
