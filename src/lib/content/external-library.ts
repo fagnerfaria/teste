@@ -112,3 +112,38 @@ export function filterExternalItems(sourceId: string, query: string, categoryNam
     (!q || (i.title + " " + i.path + " " + i.category).toLocaleLowerCase("pt-BR").includes(q))
   );
 }
+
+/** Mapeamento temático por título e caminho, não equivalência de currículo. */
+const TRACK_TERMS: Record<string, string[]> = {
+ "fundamentos": ["python", "fundamentos", "programacao", "programação", "algorithms", "data-structures", "basics"],
+ "python-pro": ["python", "pandas", "mathematics", "statistics", "data-analysis", "testing", "algorithms"],
+ "web": ["html", "css", "javascript", "react", "frontend", "responsive", "typescript", "accessibility"],
+ "engenharia": ["git", "terminal", "testing", "security", "software", "database", "ci", "devops", "linux"],
+ "automacao": ["api", "backend", "sql", "network", "http", "automation", "mcp", "docker", "cloud"],
+ "ia-agentes": ["ai", "agent", "llm", "machine-learning", "neural", "deep-learning", "prompt", "rag", "intelligence"],
+};
+
+/**
+ * Recomenda referências por palavras-chave explícitas, com diversidade de origem.
+ * Os vínculos são aproximações temáticas, nunca alegação de equivalência didática.
+ */
+export function recommendedExternal(trackId: string, limit = 12): ExternalItem[] {
+ const terms = TRACK_TERMS[trackId];
+ if (!terms) return [];
+ const max = Math.max(0, Math.min(40, Math.floor(limit) || 0));
+ const bySource = new Map<string, number>();
+ const scored = EXTERNAL_ITEMS.map(item => {
+   const normalized = item.path.toLocaleLowerCase("pt-BR");
+   const score = terms.reduce((n,term) => n + (normalized.includes(term) ? (term.length >= 4 ? 3 : 1) : 0),0);
+   return {item,score};
+ }).filter(x=>x.score>0)
+   .sort((a,b)=>b.score-a.score || a.item.path.localeCompare(b.item.path));
+ const out: ExternalItem[]=[];
+ for(const {item} of scored) {
+   const total=bySource.get(item.sourceId)||0;
+   if(total >= Math.max(2,Math.ceil(max/3)))continue;
+   out.push(item);bySource.set(item.sourceId,total+1);
+   if(out.length>=max)break;
+ }
+ return out;
+}
