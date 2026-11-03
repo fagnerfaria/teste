@@ -45,7 +45,7 @@ try{
   await page.getByRole('button',{name:'Executar avaliação de recuperação'}).click();await page.getByText(/Hit@1:/).waitFor();
  });
  await step('Diagnóstico completo e progresso persistente',async()=>{
-  await page.goto(base+'/percurso');const groups=page.locator('fieldset');assert.equal(await groups.count(),6);
+  await page.goto(base+'/percurso');await page.getByRole('heading',{name:'Diagnóstico inicial',exact:true}).waitFor();const groups=page.locator('fieldset');assert.equal(await groups.count(),6);
   for(const group of await groups.all())await group.getByRole('radio').first().check();
   await page.getByRole('button',{name:'Ver meu diagnóstico'}).click();await page.getByText(/de 6 respostas corretas/).waitFor();await page.reload();await page.getByText(/de 6 respostas corretas/).waitFor();
  });
