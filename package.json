@@ -13,7 +13,7 @@
     "test": "vitest run src/test",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run lint && npm test && npm run test:content && npm run verify:curriculum && node scripts/worker-security.test.mjs && node scripts/monitor-check.mjs",
+    "check": "npm run build && npm run typecheck && npm run lint && npm test && npm run test:content && npm run verify:curriculum && node scripts/worker-security.test.mjs && node scripts/monitor-check.mjs",
     "smoke": "node scripts/smoke.mjs",
     "test:content": "node --test scripts/content-snapshot.test.mjs scripts/mdx-reader.test.mjs",
     "verify:curriculum": "node --import tsx scripts/verify-curriculum.mjs",

@@ -67,7 +67,7 @@ export default {
   if(!['GET','HEAD'].includes(request.method))return new Response('Método não permitido',{status:405});
   if(!env.ASSETS)return new Response('Assets não configurados',{status:503});
   const document=path==='/'||! /\.[a-z0-9]{1,16}$/i.test(path);
-  const target=new URL(url);if(document)target.pathname='/index.html';
+  const target=new URL(url);if(document)target.pathname='/';
   const response=await env.ASSETS.fetch(new Request(target,request));
   const headers=new Headers(response.headers);
   headers.set('Cache-Control',document||(path==='/sw.js'||path==='/sw-build.js')||path.endsWith('.webmanifest')?'no-cache, must-revalidate':path.startsWith('/assets/')?'public, max-age=31536000, immutable':'public, max-age=3600');

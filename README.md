@@ -37,6 +37,8 @@ Requer Node 24 e Python3 para verificar as soluções didáticas.
 ```sh
 npm ci
 npm run dev
+# Em um checkout novo, gere as rotas antes de verificar tipos:
+npm run build
 npm run lint
 npm run typecheck
 npm test

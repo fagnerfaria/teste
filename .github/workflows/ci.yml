@@ -20,6 +20,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Gerar build e árvore de rotas antes dos tipos
+        run: npm run build
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
@@ -27,7 +29,6 @@ jobs:
       - run: npm run verify:curriculum
       - run: node scripts/worker-security.test.mjs
       - run: node scripts/monitor-check.mjs
-      - run: npm run build
       - name: Navegador real com assets nativos, CSP e D1 local
         run: npm run qa
       - name: Dependências Python/npm, imports atualizados e limites de execução

@@ -8,7 +8,7 @@ const PROGRESS = { prepare(text) { return { bind(...args) { return {
  async run() { const r=sql.prepare(text).run(...args); return {meta:{changes:Number(r.changes)}}; }
 }; } }; } };
 const seen=[];
-const env={PROGRESS, ASSETS:{async fetch(req){seen.push(new URL(req.url).pathname);return new Response(new URL(req.url).pathname.endsWith('.js')?'export const ready=true':'<h1>Academia</h1>',{headers:{'content-type':new URL(req.url).pathname.endsWith('.js')?'text/javascript':'text/html'}})}}};
+const env={PROGRESS, ASSETS:{async fetch(req){seen.push(new URL(req.url).pathname);if(new URL(req.url).pathname==='/index.html')return new Response(null,{status:301,headers:{location:'/'}});return new Response(new URL(req.url).pathname.endsWith('.js')?'export const ready=true':'<h1>Academia</h1>',{headers:{'content-type':new URL(req.url).pathname.endsWith('.js')?'text/javascript':'text/html'}})}}};
 sql.exec('CREATE TABLE progress_limits (id TEXT PRIMARY KEY,window INTEGER NOT NULL,count INTEGER NOT NULL)');
 const token='a'.repeat(64), other='b'.repeat(64);
 const req=(method='GET',body,auth=token,path='/api/progress')=>new Request('https://codigolab.pages.dev'+path,{method,headers:{...(auth?{authorization:'Bearer '+auth}:{}),...(body?{'content-type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
@@ -28,7 +28,7 @@ assert.equal((await worker.fetch(req('PUT',{revision:3,payload}),env)).status,20
 assert.equal((await worker.fetch(req('PUT',{revision:2,payload}),env)).status,409,'Cliente anterior à exclusão não pode sobrescrever nova cópia');
 assert.equal((await worker.fetch(req('GET',undefined,null,'/api/progress/status'),{})).status,503);
 const html=await worker.fetch(new Request('https://codigolab.pages.dev/workspace'),env);
-assert.equal(html.status,200);assert.equal(seen.at(-1),'/index.html','SPA precisa arquivos nativos');
+assert.equal(html.status,200);assert.equal(seen.at(-1),'/','SPA precisa arquivos nativos');
 assert.match(html.headers.get('content-security-policy'),/wasm-unsafe-eval/);
 assert.match(html.headers.get('cache-control'),/no-cache/);
 const asset=await worker.fetch(new Request('https://codigolab.pages.dev/assets/index-test.js'),env);

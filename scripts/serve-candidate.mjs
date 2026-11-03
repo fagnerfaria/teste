@@ -10,7 +10,7 @@ export async function serveCandidate(){
  const PROGRESS={prepare(sql){return{bind(...args){return{async first(){return db.prepare(sql).get(...args)||null},async run(){const result=db.prepare(sql).run(...args);return{meta:{changes:Number(result.changes)}}}}}}}};
  const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.wasm':'application/wasm','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.md':'text/plain','.mdx':'text/plain'};
  const root=resolve('dist');
- const env={PROGRESS,ASSETS:{async fetch(req){const path=resolve(root,'.'+new URL(req.url).pathname);if(!path.startsWith(root+'/'))return new Response('Not found',{status:404});try{return new Response(await readFile(path),{headers:{'content-type':types[extname(path)]||'application/octet-stream'}})}catch{return new Response('Not found',{status:404})}}}};
+ const env={PROGRESS,ASSETS:{async fetch(req){const pathname=new URL(req.url).pathname;if(pathname==='/index.html')return new Response(null,{status:301,headers:{location:'/'}});const path=resolve(root,'.'+(pathname==='/'?'/index.html':pathname));if(!path.startsWith(root+'/'))return new Response('Not found',{status:404});try{return new Response(await readFile(path),{headers:{'content-type':types[extname(path)]||'application/octet-stream'}})}catch{return new Response('Not found',{status:404})}}}};
  const server=createServer(async(req,res)=>{
   try{const chunks=[];for await(const chunk of req)chunks.push(chunk);const url='http://127.0.0.1:'+server.address().port+(req.url||'/');
    const response=await worker.fetch(new Request(url,{method:req.method,headers:req.headers,...(!['GET','HEAD'].includes(req.method)?{body:Buffer.concat(chunks)}:{})}),env);
