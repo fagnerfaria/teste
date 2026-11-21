@@ -1,0 +1,47 @@
+name: Auto-tag Release
+
+# A chore(release) PR merged to master (manifest.json changed) -> push the bare
+# tag <manifest version> and dispatch release.yml (a GITHUB_TOKEN tag push fires
+# no tag trigger). Obsidian requires tag == manifest.json version, no v prefix.
+on:
+  push:
+    branches: [agentage-release-p53-20261121]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  tag:
+    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-release-p53-20261121'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Tag the release commit
+        id: tag
+        run: |
+          set -euo pipefail
+          MSG=$(git log -1 --pretty=%s)
+          echo "$MSG" | grep -qE '^chore\(release\): |^Merge pull request .* release/' || { echo "Not a release commit."; exit 0; }
+          V=$(node -p "require('./manifest.json').version")
+          test "$V" = "0.12.4-lab.p53.20261121"
+          REF="refs/tags/$V"
+          if git show-ref --verify --quiet "$REF"; then
+            if [ "$(git rev-parse "$REF^{commit}")" != "$(git rev-parse HEAD)" ]; then
+              echo "::error::Tag $V points to a different commit." >&2
+              exit 1
+            fi
+          else
+            git tag -- "$V"
+            git push origin "$REF"
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+      - name: Dispatch release.yml
+        if: steps.tag.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: gh workflow run release.yml --ref "$VERSION" -R "$GITHUB_REPOSITORY" -f build_current=true
