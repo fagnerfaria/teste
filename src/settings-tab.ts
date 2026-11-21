@@ -1,0 +1,190 @@
+import { type App, PluginSettingTab, Setting, debounce } from 'obsidian';
+import {
+  CONNECT_URL,
+  PROD_SITE_FQDN,
+  validateSettings,
+  type AgentageMemorySettings,
+} from './settings';
+import type { ApplyResult } from './vaults-config';
+
+// What the settings page needs from the plugin (avoids a circular import on main).
+export interface SettingsHost {
+  settings: AgentageMemorySettings;
+  saveSettings(): Promise<void>;
+  refreshAutoSyncSchedule(): void;
+  vaultRootPath(): string;
+  isDesktop: boolean;
+  openSignIn(): void;
+  isSignedIn(): boolean;
+  disconnect(): Promise<void>;
+  applyConfig(): Promise<ApplyResult>;
+  /** Open the memory chooser popup (pick an existing memory or create a new one). */
+  chooseMemory(): void;
+  /** The site host every origin derives from this session (drives the non-prod banner). */
+  activeSiteFqdn(): string;
+}
+
+export class AgentageMemorySettingTab extends PluginSettingTab {
+  private host: SettingsHost;
+  private status?: HTMLElement;
+  private writeDebounced: () => void;
+
+  constructor(app: App, host: SettingsHost) {
+    super(app, host as unknown as never);
+    this.host = host;
+    this.writeDebounced = debounce(() => void this.write(), 700, true);
+  }
+
+  /** On any change: persist plugin data now, write vaults.json debounced. */
+  private touch(): void {
+    void this.host.saveSettings();
+    this.writeDebounced();
+  }
+
+  private async write(): Promise<void> {
+    if (validateSettings(this.host.settings).length) return this.setStatus('Not saved yet.', 'err');
+    if (!this.host.isDesktop) return this.setStatus('Saved in the app.', 'muted');
+    this.setStatus('Saving…', 'muted');
+    const res = await this.host.applyConfig();
+    this.setStatus(res.ok ? 'Saved' : `Couldn’t save: ${res.error}`, res.ok ? 'ok' : 'err');
+  }
+
+  display(): void {
+    const { containerEl } = this;
+    const s = this.host.settings;
+    this.status = undefined;
+    containerEl.empty();
+    containerEl.addClass('ams-settings');
+
+    containerEl.createEl('p', {
+      cls: 'ams-sub',
+      text: 'One memory for all your AI - backed up, in sync, and readable by Claude, ChatGPT, Cursor, and more.',
+    });
+
+    // A non-prod host must be impossible to miss, whether it came from the setting or the env.
+    if (this.host.activeSiteFqdn() !== PROD_SITE_FQDN)
+      containerEl.createEl('p', {
+        cls: 'ams-host-banner',
+        text: `Active host: ${this.host.activeSiteFqdn()} (not production)`,
+      });
+
+    // ---- Connect (top, primary) ----
+    const connect = new Setting(containerEl);
+    if (this.host.isSignedIn()) {
+      connect
+        .setName('Connected to Agentage')
+        .setDesc('Your account is linked. The sign-in token is stored privately on this device.')
+        .addButton((b) =>
+          b
+            .setWarning()
+            .setButtonText('Disconnect')
+            .onClick(async () => {
+              await this.host.disconnect();
+              this.display();
+            })
+        );
+    } else {
+      connect
+        .setName('Agentage Sync')
+        .setDesc('Sign in to start syncing this vault with your Agentage Memory.')
+        .addButton((b) =>
+          b
+            .setCta()
+            .setButtonText('Sign in to Agentage')
+            .onClick(() => this.host.openSignIn())
+        );
+    }
+    connect.nameEl.addClass('ams-big');
+
+    // ---- Memory (only once signed in): a button that opens the chooser popup ----
+    if (this.host.isSignedIn()) {
+      const cur = s.vault;
+      new Setting(containerEl)
+        .setName('Memory')
+        .setDesc(cur ? `This vault syncs into "${cur}".` : 'No memory chosen yet.')
+        .addButton((b) =>
+          b
+            .setCta()
+            .setButtonText(cur ? 'Change memory…' : 'Choose memory…')
+            .onClick(() => this.host.chooseMemory())
+        );
+    }
+
+    // ---- AI access over MCP (signed-in only; on by default) ----
+    if (this.host.isSignedIn()) {
+      new Setting(containerEl)
+        .setName('Expose remote MCP')
+        .setDesc('Let AI apps anywhere - Claude, ChatGPT, Cursor - read and write your notes.')
+        .addToggle((t) =>
+          t.setValue(s.mcp.includes('remote')).onChange((v) => this.setScope('remote', v))
+        );
+    }
+
+    // Configuration is local to Obsidian. Changes take effect immediately.
+    new Setting(containerEl)
+      .setName('Automatic synchronization')
+      .setDesc(
+        'Obsidian-only timer; disabling it keeps the Agentage remote and Manual Sync now available.'
+      )
+      .addToggle((t) =>
+        t.setValue(s.autoSyncEnabled).onChange((enabled) => {
+          s.autoSyncEnabled = enabled;
+          this.host.refreshAutoSyncSchedule();
+          void this.host.saveSettings();
+        })
+      );
+    new Setting(containerEl)
+      .setName('Sync interval')
+      .setDesc('Minutes between automatic checks; select Manual only to disable scheduled sync.')
+      .addDropdown((d) => {
+        const choices: [string, string][] = [
+          ['0', 'Manual only'],
+          ['1', '1 minute'],
+          ['5', '5 minutes (default)'],
+          ['15', '15 minutes'],
+          ['30', '30 minutes'],
+          ['60', '1 hour'],
+        ];
+        const chosen = String(s.origin.interval);
+        if (!choices.some(([value]) => value === chosen)) {
+          choices.push([chosen, chosen + ' minutes (custom)']);
+        }
+        for (const [value, label] of choices) d.addOption(value, label);
+        d.setValue(chosen).onChange((value) => {
+          const minutes = Number(value);
+          if (!Number.isInteger(minutes) || minutes < 0 || minutes > 1440) return;
+          s.origin.interval = minutes;
+          this.host.refreshAutoSyncSchedule();
+          void this.host.saveSettings();
+        });
+      });
+    this.status = containerEl.createDiv({ cls: 'ams-status' });
+
+    // ---- How to connect AI apps over MCP (only meaningful once signed in) ----
+    if (this.host.isSignedIn()) {
+      const docs = containerEl.createEl('p', { cls: 'ams-hint' });
+      docs.appendText('Connect Claude, ChatGPT, Cursor and more - see ');
+      docs.createEl('a', { text: 'how to connect', href: CONNECT_URL });
+      docs.appendText('.');
+    }
+
+    // The dev/testing host override (siteFqdn) is intentionally NOT editable here - set it
+    // directly in data.json for a dev vault; it applies on the next Obsidian restart.
+  }
+
+  /** Add/remove an MCP scope, then persist. */
+  private setScope(scope: 'local' | 'remote', on: boolean): void {
+    const s = this.host.settings;
+    s.mcp = on ? Array.from(new Set([...s.mcp, scope])) : s.mcp.filter((x) => x !== scope);
+    this.touch();
+  }
+
+  private setStatus(text: string, kind: 'ok' | 'err' | 'muted'): void {
+    if (!this.status) return;
+    this.status.empty();
+    this.status.createDiv({
+      cls: `ams-status-line ams-${kind}`,
+      text: kind === 'ok' ? `✓ ${text}` : text,
+    });
+  }
+}

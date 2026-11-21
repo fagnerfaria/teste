@@ -1,0 +1,150 @@
+/* Agentage Memory Sync — configuration page styles. */
+
+.ams-settings .ams-sub {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  margin: 0.2em 0 0.8em;
+}
+
+.ams-settings h3 {
+  margin-top: 1.4em;
+  padding-top: 0.6em;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.ams-callout {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  flex-wrap: wrap;
+  padding: 0.6em 0.8em;
+  margin: 0.4em 0 0.8em;
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  border-left: 3px solid var(--interactive-accent);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.ams-callout-tag {
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  background: var(--background-modifier-border);
+  padding: 0.1em 0.5em;
+  border-radius: var(--radius-s);
+}
+
+.ams-mono,
+.ams-preview {
+  font-family: var(--font-monospace);
+}
+
+.ams-preview {
+  background: var(--background-primary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 0.8em 1em;
+  font-size: var(--font-ui-smaller);
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.ams-errors {
+  margin: 0.4em 0;
+}
+
+.ams-error {
+  color: var(--text-error);
+  font-size: var(--font-ui-small);
+}
+
+.ams-hint {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+/* Non-production host warning (settings tab). */
+.ams-host-banner {
+  color: var(--text-warning, var(--text-error));
+  font-weight: var(--font-semibold);
+  font-size: var(--font-ui-small);
+  margin: 0.2em 0 0.8em;
+}
+
+.ams-settings .ams-big {
+  font-weight: var(--font-semibold);
+}
+
+.ams-status {
+  min-height: 1.2em;
+  margin: 0.6em 0 0.2em;
+}
+
+.ams-status-line {
+  font-size: var(--font-ui-small);
+}
+
+.ams-ok {
+  color: var(--text-success, #6cc070);
+}
+
+.ams-err {
+  color: var(--text-error);
+}
+
+.ams-muted {
+  color: var(--text-muted);
+}
+
+/* Status bar = a colored dot + an optional label (shown only when action is needed,
+   e.g. "Choose memory"). Tone set on .ams-sb-dot. */
+.ams-statusbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.ams-sb-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  box-shadow: 0 0 0 1px var(--background-modifier-border);
+}
+
+.ams-sb-dot.is-green {
+  background: var(--color-green, #4caf50);
+}
+.ams-sb-dot.is-red {
+  background: var(--color-red, #e05252);
+}
+.ams-sb-dot.is-amber {
+  background: var(--color-orange, #e0a030);
+}
+.ams-sb-dot.is-gray {
+  background: var(--text-muted);
+}
+
+.ams-sb-text {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.ams-sb-text:empty {
+  display: none;
+}
+
+/* Post-sign-in sync popup: the both-way file counts. */
+.ams-sync-counts {
+  margin: 0.6em 0;
+  padding: 0.7em 0.9em;
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  font-size: var(--font-ui-medium);
+  line-height: 1.7;
+}
+.ams-sync-counts > div {
+  font-variant-numeric: tabular-nums;
+}

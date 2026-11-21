@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [agentage-ci-p53-20261121]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: 🔧 Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Pin npm for the project lockfile
+        run: npm install --global npm@11.19.1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify
+        run: npm run verify
+
+      # Kept from pr-validation.yml: `verify` does not include coverage.
+      - name: Test with coverage
+        run: npm run test:coverage
+
+      - name: Verify bundle checksum
+        run: |
+          printf '%s  %s\n' '26047763419e4266830e12937c3ca33d1ca929f3c73c4ef9cca0af7c1c0450ed' main.js > SHA256SUMS
+          sha256sum -c SHA256SUMS
+      - name: Upload lab build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: agentage-p53-build
+          path: |
+            main.js
+            manifest.json
+            styles.css
+            SHA256SUMS
+          if-no-files-found: error
+          retention-days: 3

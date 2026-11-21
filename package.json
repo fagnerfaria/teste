@@ -1,0 +1,71 @@
+{
+  "name": "obsidian-sync",
+  "version": "0.12.4",
+  "description": "Sync your vault to a private memory that any AI reads and writes over MCP: Claude, ChatGPT, Cursor, and any MCP client share the same Markdown you own.",
+  "private": true,
+  "type": "module",
+  "main": "main.js",
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs production",
+    "type-check": "tsc --noEmit -skipLibCheck",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "test": "vitest run",
+    "test:e2e": "vitest run test/integration",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf main.js *.map coverage",
+    "version": "node scripts/version-bump.mjs && git add manifest.json versions.json",
+    "check:hosts": "node scripts/check-hosts.mjs",
+    "check:docs": "node scripts/check-docs.mjs",
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "verify": "npm run type-check && npm run lint && npm run format:check && npm run test && npm run build && npm run check:hosts && npm run check:docs && npm run check:bundle"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "agentage",
+    "mcp",
+    "sync"
+  ],
+  "author": "agentage",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^26.6.6",
+    "@typescript-eslint/eslint-plugin": "^8.72.2",
+    "@typescript-eslint/parser": "^8.69.0",
+    "@vitest/coverage-v8": "^5.1.0",
+    "builtin-modules": "^5.5.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-obsidianmd": "0.5.1",
+    "eslint-plugin-prettier": "^5.5.7",
+    "obsidian": "latest",
+    "prettier": "^3.9.10",
+    "tslib": "^2.9.1",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  },
+  "dependencies": {
+    "diff3": "^0.0.4",
+    "isomorphic-git": "1.44.12",
+    "js-yaml": "^5.5.0"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.1"
+    },
+    "eslint-plugin-n": {
+      "minimatch": "11.0.1"
+    }
+  }
+}
