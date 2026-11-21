@@ -1,13 +1,9 @@
 name: Prepare Release
 
-# Opens the chore(release) PR and arms auto-merge. The PR gate verifies it like
-# any PR, auto-merge lands it, release.yml publishes on the merge. The PR is
-# authored with PAT_TOKEN so pull_request workflows fire (GITHUB_TOKEN PRs fire
-# nothing). Dispatched by agentage/automation on Fridays or by hand any day.
-# No cron, no direct push, no secrets beyond the PAT. Red run = the alarm.
+
 on:
   push:
-    branches: [agentage-prepare-p53-20261121]
+    branches: [agentage-p53-auto-merge-probe-20261121]
 
 permissions:
   contents: write
@@ -23,7 +19,7 @@ env:
 
 jobs:
   prepare:
-    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-prepare-p53-20261121'
+    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-p53-auto-merge-probe-20261121'
     name: Open release PR
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -46,7 +42,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          OPEN=$(gh pr list --state open --json headRefName --jq '[.[] | select(.headRefName == "release/agentage-p53-20261121")] | length')
+          OPEN=$(gh pr list --state open --json headRefName --jq '[.[] | select(.headRefName == "release/agentage-p53-auto-merge-probe-20261121")] | length')
           if [ "$OPEN" != "0" ]; then
             echo "A release PR is already open - its gate is red or auto-merge is off. Fix that first." | tee -a "$GITHUB_STEP_SUMMARY"
             echo "skip=true" >> "$GITHUB_OUTPUT"
@@ -92,6 +88,7 @@ jobs:
           BUMP_KIND: ${{ steps.decide.outputs.bump }}
         run: |
           set -euo pipefail
+          git switch --detach origin/agentage-prepare-p53-20261121
           npm version --no-git-tag-version "$BUMP_KIND" >/dev/null
           npm install --package-lock-only
           echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
@@ -107,11 +104,11 @@ jobs:
           V="$RELEASE_VERSION"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b "release/agentage-p53-20261121"
+          git checkout -b "release/agentage-p53-auto-merge-probe-20261121"
           git add -A
           git commit -m "chore(release): ${V}"
-          git push origin "HEAD:refs/heads/release/agentage-p53-20261121"
-          URL=$(gh pr create --base agentage-prepare-p53-20261121 --head "release/agentage-p53-20261121" \
+          git push origin "HEAD:refs/heads/release/agentage-p53-auto-merge-probe-20261121"
+          URL=$(gh pr create --base agentage-prepare-p53-20261121 --head "release/agentage-p53-auto-merge-probe-20261121" \
             --title "chore(release): laboratório Agentage P5.3 ${V}" \
             --body "PR de laboratório do prepare-release do Agentage P5.3 com bump $BUMP_KIND.")
           gh pr merge "$URL" --auto --squash
