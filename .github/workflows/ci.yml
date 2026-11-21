@@ -1,8 +1,8 @@
 name: CI
 
 on:
-  push:
-    branches: [agentage-ci-p53-20261121]
+  pull_request:
+    branches: [agentage-prepare-p53-20261121]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -40,19 +40,3 @@ jobs:
       # Kept from pr-validation.yml: `verify` does not include coverage.
       - name: Test with coverage
         run: npm run test:coverage
-
-      - name: Verify bundle checksum
-        run: |
-          printf '%s  %s\n' '26047763419e4266830e12937c3ca33d1ca929f3c73c4ef9cca0af7c1c0450ed' main.js > SHA256SUMS
-          sha256sum -c SHA256SUMS
-      - name: Upload lab build
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: agentage-p53-build
-          path: |
-            main.js
-            manifest.json
-            styles.css
-            SHA256SUMS
-          if-no-files-found: error
-          retention-days: 3

@@ -1,0 +1,118 @@
+name: Prepare Release
+
+# Opens the chore(release) PR and arms auto-merge. The PR gate verifies it like
+# any PR, auto-merge lands it, release.yml publishes on the merge. The PR is
+# authored with PAT_TOKEN so pull_request workflows fire (GITHUB_TOKEN PRs fire
+# nothing). Dispatched by agentage/automation on Fridays or by hand any day.
+# No cron, no direct push, no secrets beyond the PAT. Red run = the alarm.
+on:
+  push:
+    branches: [agentage-prepare-p53-20261121]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: agentage-prepare-p53-20261121
+  cancel-in-progress: false
+
+env:
+  TAG_GLOB: '[0-9]*.[0-9]*.[0-9]*' # bare tags: Obsidian requires tag == manifest.json version
+  TAG_PREFIX: '' # bare tags: tag == manifest.json version
+
+jobs:
+  prepare:
+    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-prepare-p53-20261121'
+    name: Open release PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ github.token }}
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Pin npm for the project lockfile
+        run: npm install --global npm@11.19.1
+
+      - name: Skip if a release PR is already open
+        id: guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          OPEN=$(gh pr list --state open --json headRefName --jq '[.[] | select(.headRefName == "release/agentage-p53-20261121")] | length')
+          if [ "$OPEN" != "0" ]; then
+            echo "A release PR is already open - its gate is red or auto-merge is off. Fix that first." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip while the current version is still unpublished (no tag yet)
+        id: pending
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          V=$(node -p "require('./package.json').version")
+          if ! git rev-parse -q --verify "refs/tags/${TAG_PREFIX}${V}" >/dev/null; then
+            echo "Version ${V} has no tag - its release.yml publish has not landed. Not bumping again; run release.yml." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Decide bump
+        id: decide
+        if: steps.guard.outputs.skip != 'true' && steps.pending.outputs.skip != 'true'
+        env:
+          REQUESTED_BUMP: 'patch'
+        run: |
+          set -euo pipefail
+          BUMP="$REQUESTED_BUMP"
+          LAST_TAG=$(git tag --list "$TAG_GLOB" --sort=-v:refname | head -1)
+          RANGE=""; [ -n "$LAST_TAG" ] && RANGE="${LAST_TAG}..HEAD"
+          # workflow-only commits (.github/**) never warrant a release
+          SUBJECTS=$(git log $RANGE --no-merges --pretty=%s -- . ':!.github')
+          FEAT=$(printf '%s\n' "$SUBJECTS" | grep -cE '^feat(\([^)]*\))?!?:' || true)
+          CODE=$(printf '%s\n' "$SUBJECTS" | grep -vE '^(docs|ci)(\([^)]*\))?!?:' | grep -vE '^chore(\([^)]*\))?!?:' | grep -c . || true)
+          DEPS=$(printf '%s\n' "$SUBJECTS" | grep -cE '^chore\(deps' || true)
+          if [ "$BUMP" = "auto" ]; then
+            if   [ "$FEAT" -gt 0 ]; then BUMP=minor
+            elif [ "$CODE" -gt 0 ] || [ "$DEPS" -gt 0 ]; then BUMP=patch
+            else BUMP=skip; fi
+          fi
+          echo "Since ${LAST_TAG:-start}: feat=$FEAT code=$CODE deps=$DEPS -> $BUMP" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
+
+      - name: Bump version
+        id: bump
+        if: steps.decide.outputs.bump && steps.decide.outputs.bump != 'skip'
+        env:
+          BUMP_KIND: ${{ steps.decide.outputs.bump }}
+        run: |
+          set -euo pipefail
+          npm version --no-git-tag-version "$BUMP_KIND" >/dev/null
+          npm install --package-lock-only
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Open PR + arm auto-merge
+        if: steps.bump.outputs.version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.bump.outputs.version }}
+          BUMP_KIND: ${{ steps.decide.outputs.bump }}
+        run: |
+          set -euo pipefail
+          V="$RELEASE_VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "release/agentage-p53-20261121"
+          git add -A
+          git commit -m "chore(release): ${V}"
+          git push origin "HEAD:refs/heads/release/agentage-p53-20261121"
+          URL=$(gh pr create --base agentage-prepare-p53-20261121 --head "release/agentage-p53-20261121" \
+            --title "chore(release): laboratório Agentage P5.3 ${V}" \
+            --body "PR de laboratório do prepare-release do Agentage P5.3 com bump $BUMP_KIND.")
+          gh pr merge "$URL" --auto --squash
+          echo "Opened $URL - auto-merge armed." | tee -a "$GITHUB_STEP_SUMMARY"
