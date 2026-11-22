@@ -4,13 +4,13 @@ name: Prepare Release
 # require the Verify check before the PR can merge.
 on:
   push:
-    branches: [agentage-prepare-p53-20261121]
+    branches: [agentage-p53-hardened-auto-merge-20261122]
 
 permissions:
   contents: read
 
 concurrency:
-  group: agentage-prepare-p53-20261121
+  group: agentage-p53-hardened-auto-merge-20261122
   cancel-in-progress: false
 
 env:
@@ -19,7 +19,7 @@ env:
 
 jobs:
   prepare:
-    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-prepare-p53-20261121'
+    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-p53-hardened-auto-merge-20261122'
     name: Open release PR
     permissions:
       contents: write # Push the lab release branch.
@@ -42,7 +42,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          OPEN=$(gh pr list --state open --json headRefName --jq '[.[] | select(.headRefName == "release/agentage-p53-20261121")] | length')
+          OPEN=$(gh pr list --state open --json headRefName --jq '[.[] | select(.headRefName == "release/agentage-p53-hardened-auto-merge-20261122")] | length')
           if [ "$OPEN" != "0" ]; then
             echo "A release PR is already open - its gate is red or auto-merge is off. Fix that first." | tee -a "$GITHUB_STEP_SUMMARY"
             echo "skip=true" >> "$GITHUB_OUTPUT"
@@ -87,7 +87,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh api "repos/$GITHUB_REPOSITORY/rules/branches/$GITHUB_REF_NAME" |
+          gh api "repos/$GITHUB_REPOSITORY/rules/branches/agentage-prepare-p53-20261121" |
             jq -e 'any(.[]; .type == "required_status_checks" and
               any(.parameters.required_status_checks[]; .context == "🔧 Verify" and .integration_id == 15368))' >/dev/null
 
@@ -98,6 +98,7 @@ jobs:
           BUMP_KIND: ${{ steps.decide.outputs.bump }}
         run: |
           set -euo pipefail
+          git switch --detach "origin/agentage-prepare-p53-20261121"
           npm version --ignore-scripts --no-git-tag-version "$BUMP_KIND" >/dev/null
           VERSION=$(node -p "require('./package.json').version")
           npm_package_version="$VERSION" node scripts/version-bump.mjs
@@ -114,11 +115,11 @@ jobs:
           V="$RELEASE_VERSION"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b "release/agentage-p53-20261121"
+          git checkout -b "release/agentage-p53-hardened-auto-merge-20261122"
           git add -- package.json package-lock.json manifest.json versions.json
           git commit -m "chore(release): ${V}"
-          git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin "HEAD:refs/heads/release/agentage-p53-20261121"
-          URL=$(gh pr create --base agentage-prepare-p53-20261121 --head "release/agentage-p53-20261121" \
+          git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin "HEAD:refs/heads/release/agentage-p53-hardened-auto-merge-20261122"
+          URL=$(gh pr create --base agentage-prepare-p53-20261121 --head "release/agentage-p53-hardened-auto-merge-20261122" \
             --title "chore(release): laboratório Agentage P5.3 ${V}" \
             --body "PR de laboratório do prepare-release do Agentage P5.3 com bump $BUMP_KIND.")
           gh pr merge "$URL" --auto --squash --match-head-commit "$(git rev-parse HEAD)"
