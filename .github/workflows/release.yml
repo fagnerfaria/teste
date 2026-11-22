@@ -1,24 +1,20 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      build_current:
-        type: boolean
-        required: true
-      draft:
-        type: boolean
-        default: false
+  push:
+    branches: [agentage-p54-npm-integrity-lab-20261122]
+    paths: ['.github/workflows/release.yml']
 
 permissions:
   contents: read
 
 concurrency:
-  group: publish-agentage-p53-lab
+  group: publish-agentage-p54-npm-integrity-lab
   cancel-in-progress: false
 
 env:
   LAB_RELEASE_TAG: '0.12.4-lab.p53.20261122'
+  LAB_OUTPUT_TAG: '0.12.4-lab.p54-npm.20261122'
   LAB_RELEASE_COMMIT: 'e85a0d6557564af8e0f47f2ea6368a8d0be19cc0'
   LAB_RELEASE_SHA256: |
     cf81dedaa6a80e1ec92da5d27c06c5e7940cb7646bd62bfd2e0e325dcffa8ca4  main.js
@@ -28,7 +24,7 @@ env:
 jobs:
   build:
     name: Build the pinned lab source
-    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-p53-consolidated-20261122' && inputs.build_current && !inputs.draft
+    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-p54-npm-integrity-lab-20261122'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -47,8 +43,23 @@ jobs:
           node-version-file: .nvmrc
           package-manager-cache: false
 
-      - name: Pin npm for the project lockfile
-        run: npm install --global --ignore-scripts npm@11.19.1
+      - name: Set up npm 11.19.1 with verified integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm_dir=$(mktemp -d "${RUNNER_TEMP}/npm-11.19.1.XXXXXXXX")
+          npm_archive="$npm_dir/npm.tgz"
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+            --max-time 60 --retry 2 \
+            https://registry.npmjs.org/npm/-/npm-11.19.1.tgz --output "$npm_archive"
+          expected_sha512=$(printf '%s' 'ztsxKxt/kkIaAs+2i0GU6I+DRmUdrNasxTZKJe9TCdSjKxlhah/4r/hl5ygMD6XAg1qZ9c2TNomR4qgOydp10g==' | base64 --decode | od -An -v -tx1 | tr -d ' \n')
+          printf '%s  %s\n' "$expected_sha512" "$npm_archive" | sha512sum --check --strict
+          tar -xzf "$npm_archive" --strip-components=1 -C "$npm_dir"
+          test "$(node "$npm_dir/bin/npm-cli.js" --version)" = '11.19.1'
+          mkdir "$npm_dir/path"
+          ln -s ../bin/npm-cli.js "$npm_dir/path/npm"
+          test "$("$npm_dir/path/npm" --version)" = '11.19.1'
+          printf '%s\n' "$npm_dir/path" >> "$GITHUB_PATH"
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
@@ -94,8 +105,11 @@ jobs:
           set -euo pipefail
           printf '%s\n' "$LAB_RELEASE_SHA256" | sha256sum --check --strict
           test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$LAB_RELEASE_TAG" --jq .sha)" = "$LAB_RELEASE_COMMIT"
+          OUTPUT_TARGET=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/tags?per_page=100" |
+            jq -r --arg tag "$LAB_OUTPUT_TAG" '[.[][] | select(.name == $tag) | .commit.sha] | first // empty')
+          if [ -n "$OUTPUT_TARGET" ]; then test "$OUTPUT_TARGET" = "$LAB_RELEASE_COMMIT"; fi
           RELEASE=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
-            jq -c --arg tag "$LAB_RELEASE_TAG" '[.[][] | select(.tag_name == $tag)] | first // empty')
+            jq -c --arg tag "$LAB_OUTPUT_TAG" '[.[][] | select(.tag_name == $tag)] | first // empty')
           if [ -z "$RELEASE" ]; then exit 0; fi
           EXPECTED=$(printf '%s\n' "$LAB_RELEASE_SHA256" |
             jq -Rn '[inputs | select(length > 0) | split("  ") | {key: .[1], value: ("sha256:" + .[0])}] | from_entries')
@@ -130,7 +144,8 @@ jobs:
         run: |
           set -euo pipefail
           test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$LAB_RELEASE_TAG" --jq .sha)" = "$LAB_RELEASE_COMMIT"
-          gh release create "$LAB_RELEASE_TAG" main.js manifest.json styles.css \
-            --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --latest=false \
-            --title 'Agentage Sync P5.3 (teste de laboratório)' \
-            --notes 'Publicação de laboratório para verificar retomada e integridade do bundle.'
+          gh release create "$LAB_OUTPUT_TAG" main.js manifest.json styles.css \
+            --repo "$GITHUB_REPOSITORY" --target "$LAB_RELEASE_COMMIT" --prerelease --latest=false \
+            --title 'Agentage Sync P5.4 (teste de integridade do npm)' \
+            --notes 'Pré-release de laboratório. Os arquivos reproduzem o candidato 0.12.4-lab.p53.20261122 usando o npm conferido antes da execução.'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$LAB_OUTPUT_TAG" --jq .sha)" = "$LAB_RELEASE_COMMIT"
