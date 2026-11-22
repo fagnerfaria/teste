@@ -1,23 +1,6 @@
 name: Release
 
-# Two ways in:
-#  1. push a bare version tag (e.g. `0.1.1`) — the classic manual release. The
-#     tag already pins the version (Obsidian requires tag == manifest.json
-#     version; `.npmrc` sets `tag-version-prefix=` so `npm version` emits bare
-#     tags), and `git push --follow-tags` fires this workflow.
-#  2. repository_dispatch `release-plugin` (fired daily by agentage/e2e on a green
-#     nightly) or a manual workflow_dispatch — auto-bumps the patch version,
-#     lands the bump via a PR (master's ruleset blocks direct pushes), then tags
-#     + builds + publishes. Skips when there are no new commits since the last tag.
-#
-# RELEASE_PAT (a fine-grained PAT / GitHub App token with contents:write +
-# pull-requests:write) is REQUIRED for the dispatch/manual path: a PR opened with
-# the default GITHUB_TOKEN does NOT trigger pr-validation, so `gh pr checks
-# --watch` would hang forever. See RELEASING.md. The tag-push path falls back to
-# GITHUB_TOKEN cleanly.
 on:
-  push:
-    branches: [agentage-release-p53-20261121]
   workflow_dispatch:
     inputs:
       build_current:
@@ -28,204 +11,126 @@ on:
         default: false
 
 permissions:
-  contents: write
-  # Provenance attestation for the published release assets (main.js, styles.css,
-  # manifest.json) - lets users cryptographically verify they were built here.
-  id-token: write
-  attestations: write
+  contents: read
+
+concurrency:
+  group: publish-agentage-p53-lab
+  cancel-in-progress: false
+
+env:
+  LAB_RELEASE_TAG: '0.12.4-lab.p53.20261121'
+  LAB_RELEASE_COMMIT: 'a2529ae7357fb086590fcbe0bbfaa45f3db956bb'
+  LAB_RELEASE_SHA256: |
+    26047763419e4266830e12937c3ca33d1ca929f3c73c4ef9cca0af7c1c0450ed  main.js
+    a08cacf35d6ded45af4a63796a6e3e3a5c1fbcb40c043014d42d82dd3ad0aea4  manifest.json
+    978a5bb11ece14f8f2843c9e96d3396309bc3103328fdb72fee303ef5e4a8115  styles.css
 
 jobs:
-  release:
-    if: github.repository == 'fagnerfaria/teste' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/tags/0.12.4-lab.p53.20261121' && inputs.build_current && !inputs.draft
-    name: 📦 Build & publish plugin release
+  build:
+    name: Build the pinned lab source
+    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-release-p53-20261121' && inputs.build_current && !inputs.draft
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    concurrency:
-      group: publish-release-${{ github.ref }}
-      cancel-in-progress: false
-
+    timeout-minutes: 15
     steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
-          # PAT so the auto-bump PR triggers pr-validation; falls back to the
-          # default token for the tag-push path (which needs no PR).
-          token: ${{ github.token }}
+          ref: refs/tags/${{ env.LAB_RELEASE_TAG }}
+          persist-credentials: false
 
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Verify release source
+        run: |
+          test "$(git rev-parse HEAD)" = "$LAB_RELEASE_COMMIT"
+          test "$(node -p "require('./manifest.json').version")" = "$LAB_RELEASE_TAG"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           package-manager-cache: false
 
       - name: Pin npm for the project lockfile
-        run: npm install --global npm@11.19.1
+        run: npm install --global --ignore-scripts npm@11.19.1
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
-      # For a tag push the version is already pinned; for a dispatch/manual run
-      # we compute the next patch (skip when nothing's new since the last tag),
-      # land the bump via a PR — the `master-protection` ruleset blocks direct
-      # pushes — and then tag the merged commit.
-      - name: Resolve release version
-        id: ver
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BUILD_CURRENT: ${{ github.event.inputs.build_current == 'true' }}
-          HAS_RELEASE_PAT: 'false'
-        run: |
-          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
-            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
-            echo "release=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # build-current: the release train already merged the version bump; just
-          # tag + build + release master's current manifest.json version (no re-bump,
-          # no PR, no RELEASE_PAT needed).
-          if [ "$BUILD_CURRENT" = "true" ]; then
-            echo "tag=$(node -p "require('./manifest.json').version")" >> "$GITHUB_OUTPUT"
-            echo "release=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          LAST=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -n "$LAST" ] && [ "$(git rev-list -n1 "$LAST")" = "$(git rev-parse HEAD)" ]; then
-            echo "release=false" >> "$GITHUB_OUTPUT"
-            echo "No new commits since tag $LAST — skipping release."
-            exit 0
-          fi
-
-          if [ "$HAS_RELEASE_PAT" != "true" ]; then
-            echo "::error::RELEASE_PAT is not set. A PR opened with GITHUB_TOKEN won't trigger pr-validation, so the bump can't be validated/merged. Add the RELEASE_PAT secret (see RELEASING.md)." >&2
-            exit 1
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          npm version patch --no-git-tag-version >/dev/null
-          NEW=$(node -p "require('./package.json').version")
-          BRANCH="chore/release-bump-${GITHUB_RUN_ID}"
-
-          git checkout -b "$BRANCH"
-          git add package.json package-lock.json manifest.json versions.json
-          git commit -m "chore(release): $NEW"
-          git push origin "$BRANCH"
-
-          PR_URL=$(gh pr create \
-            --base master --head "$BRANCH" \
-            --title "chore(release): $NEW" \
-            --body "Automated patch bump from a green nightly (agentage/e2e). The Release workflow will merge this PR once pr-validation passes, then tag and publish ${NEW}.")
-          PR=${PR_URL##*/}
-
-          echo "Waiting for pr-validation on PR #$PR…"
-          gh pr checks "$PR" --watch
-
-          echo "Squash-merging PR #$PR"
-          gh pr merge "$PR" --squash --delete-branch
-
-          git fetch origin master
-          git checkout master
-          git reset --hard origin/master
-
-          MERGED=$(node -p "require('./manifest.json').version")
-          if [ "$MERGED" != "$NEW" ]; then
-            echo "::error::Merged master manifest is $MERGED, expected $NEW (concurrent push?)"
-            exit 1
-          fi
-
-          echo "tag=$NEW" >> "$GITHUB_OUTPUT"
-          echo "release=true" >> "$GITHUB_OUTPUT"
-          echo "Bump landed on master as $NEW (was ${LAST:-none})."
-
-      # Tag the merged commit (the push-tag path already carries its tag). Tags
-      # aren't covered by the master ruleset, so this push works with either token.
-      - name: Tag merged commit
-        if: steps.ver.outputs.release == 'true' && github.event_name != 'push'
-        env:
-          T: ${{ steps.ver.outputs.tag }}
-        run: |
-          # build_current path: auto-tag-on-merge.yml already pushed the tag
-          git show-ref --verify --quiet "refs/tags/$T" || { git tag -- "$T"; git push origin "refs/tags/$T"; }
-
-      - name: Verify tag matches manifest version and build commit
-        if: steps.ver.outputs.release == 'true'
-        env:
-          TAG: ${{ steps.ver.outputs.tag }}
-        run: |
-          MANIFEST=$(node -p "require('./manifest.json').version")
-          if [ "$TAG" != "$MANIFEST" ]; then
-            echo "::error::Release tag '$TAG' does not match manifest.json version '$MANIFEST'. Obsidian requires they be identical." >&2
-            exit 1
-          fi
-          TAG_COMMIT=$(git rev-parse --verify "refs/tags/$TAG^{commit}")
-          if [ "$TAG_COMMIT" != "$(git rev-parse HEAD)" ]; then
-            echo "::error::Tag $TAG points to a different commit than the build checkout." >&2
-            exit 1
-          fi
-          echo "tag, manifest and build checkout agree on $TAG"
-
-      - name: Check for completed release
-        id: published
-        if: steps.ver.outputs.release == 'true' && github.ref_type == 'tag' && (github.event_name == 'push' || inputs.build_current)
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.ver.outputs.tag }}
-        run: |
-          set -euo pipefail
-          RELEASE=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" | jq -c --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)] | first // empty')
-          if [ -z "$RELEASE" ]; then exit 0; fi
-          if jq -e '
-            .draft == false
-            and (([.assets[] | select(.state == "uploaded") | .name]
-              | contains(["main.js", "manifest.json", "styles.css"])))
-          ' <<< "$RELEASE" >/dev/null; then
-            echo "Release $TAG and all assets already exist."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::error::Release $TAG already exists as a draft or with missing assets. Inspect it before retrying." >&2
-            exit 1
-          fi
-
-      - name: Build plugin
-        if: steps.ver.outputs.release == 'true' && steps.published.outputs.skip != 'true'
+      - name: Build and verify the assets
         run: |
           npm run build
-          printf '%s  %s\n' '26047763419e4266830e12937c3ca33d1ca929f3c73c4ef9cca0af7c1c0450ed' main.js | sha256sum -c -
+          printf '%s\n' "$LAB_RELEASE_SHA256" | sha256sum --check --strict
+          npm run check:hosts
+          npm run check:docs
+          npm run check:bundle
 
-      - name: Store-compliance checks (hosts + README disclosures)
-        if: steps.ver.outputs.release == 'true' && steps.published.outputs.skip != 'true'
-        run: npm run check:hosts && npm run check:docs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: agentage-p53-release-assets
+          path: |
+            main.js
+            manifest.json
+            styles.css
+          if-no-files-found: error
+          retention-days: 3
+          overwrite: true
 
-      - name: Verify bundle has no node builtins (mobile-safe)
-        if: steps.ver.outputs.release == 'true' && steps.published.outputs.skip != 'true'
-        run: node scripts/check-bundle.mjs
+  publish:
+    name: Attest and publish the lab assets
+    needs: build
+    permissions:
+      contents: write # Create the lab pre-release.
+      id-token: write # Request an identity token for signing.
+      attestations: write # Store the signed release attestation.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: agentage-p53-release-assets
 
-      - name: Attest build provenance
-        if: steps.ver.outputs.release == 'true' && steps.published.outputs.skip != 'true'
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      - name: Verify assets and check for an existing release
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$LAB_RELEASE_SHA256" | sha256sum --check --strict
+          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$LAB_RELEASE_TAG" --jq .sha)" = "$LAB_RELEASE_COMMIT"
+          RELEASE=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
+            jq -c --arg tag "$LAB_RELEASE_TAG" '[.[][] | select(.tag_name == $tag)] | first // empty')
+          if [ -z "$RELEASE" ]; then exit 0; fi
+          EXPECTED=$(printf '%s\n' "$LAB_RELEASE_SHA256" |
+            jq -Rn '[inputs | select(length > 0) | split("  ") | {key: .[1], value: ("sha256:" + .[0])}] | from_entries')
+          if ! jq -e --argjson expected "$EXPECTED" '
+            .draft == false and .prerelease == true and
+            (.assets | length == ($expected | length) and
+              all(.[]; .name as $name | ($expected | has($name)) and
+                .state == "uploaded" and .digest == $expected[$name]) and
+              ([.[].name] | unique | length) == ($expected | length))
+          ' <<< "$RELEASE" >/dev/null; then
+            echo "::error::Existing lab release does not match the expected assets and checksums."
+            exit 1
+          fi
+          echo "skip=true" >> "$GITHUB_OUTPUT"
+
+      - name: Attest the verified lab release source
+        if: steps.existing.outputs.skip != 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: |
             main.js
             styles.css
             manifest.json
+          predicate-type: https://github.com/fagnerfaria/teste/attestations/lab-release/v1
+          predicate: >-
+            {"repository":"${{ github.repository }}","sourceCommit":"${{ env.LAB_RELEASE_COMMIT }}","sourceTag":"${{ env.LAB_RELEASE_TAG }}"}
 
-      - name: Create GitHub Release
-        if: steps.ver.outputs.release == 'true' && steps.published.outputs.skip != 'true'
-        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
-        with:
-          tag_name: ${{ steps.ver.outputs.tag }}
-          name: "Agentage Sync P5.3 (teste de laboratório)"
-          draft: false
-          make_latest: false
-          prerelease: ${{ contains(steps.ver.outputs.tag, '-') }}
-          body: |
-            Publicação de laboratório para verificar retomada e integridade do bundle.
-          files: |
-            main.js
-            manifest.json
-            styles.css
-          fail_on_unmatched_files: true
+      - name: Create lab pre-release
+        if: steps.existing.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$LAB_RELEASE_TAG" --jq .sha)" = "$LAB_RELEASE_COMMIT"
+          gh release create "$LAB_RELEASE_TAG" main.js manifest.json styles.css \
+            --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease --latest=false \
+            --title 'Agentage Sync P5.3 (teste de laboratório)' \
+            --notes 'Publicação de laboratório para verificar retomada e integridade do bundle.'
