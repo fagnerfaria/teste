@@ -2,9 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [agentage-p53-consolidated-20261122]
-  pull_request:
-    branches: [agentage-prepare-p53-20261121]
+    branches: [agentage-p54-npm-integrity-lab-20261122]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -30,8 +28,23 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
-      - name: Pin npm for the project lockfile
-        run: npm install --global --ignore-scripts npm@11.19.1
+      - name: Set up npm 11.19.1 with verified integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm_dir=$(mktemp -d "${RUNNER_TEMP}/npm-11.19.1.XXXXXXXX")
+          npm_archive="$npm_dir/npm.tgz"
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+            --max-time 60 --retry 2 \
+            https://registry.npmjs.org/npm/-/npm-11.19.1.tgz --output "$npm_archive"
+          expected_sha512=$(printf '%s' 'ztsxKxt/kkIaAs+2i0GU6I+DRmUdrNasxTZKJe9TCdSjKxlhah/4r/hl5ygMD6XAg1qZ9c2TNomR4qgOydp10g==' | base64 --decode | od -An -v -tx1 | tr -d ' \n')
+          printf '%s  %s\n' "$expected_sha512" "$npm_archive" | sha512sum --check --strict
+          tar -xzf "$npm_archive" --strip-components=1 -C "$npm_dir"
+          test "$(node "$npm_dir/bin/npm-cli.js" --version)" = '11.19.1'
+          mkdir "$npm_dir/path"
+          ln -s ../bin/npm-cli.js "$npm_dir/path/npm"
+          test "$("$npm_dir/path/npm" --version)" = '11.19.1'
+          printf '%s\n' "$npm_dir/path" >> "$GITHUB_PATH"
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
