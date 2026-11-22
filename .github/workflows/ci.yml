@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  push:
+    branches: [agentage-p53-security]
   pull_request:
     branches: [agentage-prepare-p53-20261121]
 
