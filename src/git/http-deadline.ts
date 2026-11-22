@@ -1,3 +1,4 @@
+import { scheduleTimeout } from '../timer';
 import type { GitHttpRequest, HttpClient } from 'isomorphic-git';
 
 /**
@@ -21,13 +22,14 @@ export function withHttpDeadline(transport: HttpClient, deadlineMs: number): Htt
       else originalSignal?.addEventListener('abort', onExternalAbort, { once: true });
 
       let timedOut = false;
-      const timeout = globalThis.setTimeout(() => {
+      const cancelTimeout = scheduleTimeout(() => {
+        originalSignal?.removeEventListener('abort', onExternalAbort);
         timedOut = true;
         abort.abort(new Error('Git HTTP request deadline exceeded'));
       }, deadlineMs);
 
       const cleanup = () => {
-        globalThis.clearTimeout(timeout);
+        cancelTimeout();
         originalSignal?.removeEventListener('abort', onExternalAbort);
       };
       const normalizedError = (err: unknown) =>
@@ -52,7 +54,7 @@ export function withHttpDeadline(transport: HttpClient, deadlineMs: number): Htt
         const source = response.body;
         const body = (async function* () {
           try {
-            for await (const chunk of source) yield chunk;
+            yield* source;
           } catch (err) {
             throw normalizedError(err);
           } finally {

@@ -57,22 +57,27 @@ export const applyVaultsConfig = async (args: ApplyArgs): Promise<ApplyResult> =
     let config: VaultsConfigPreview = { $schema: VAULTS_SCHEMA_URL, version: 1, vaults: {} };
     try {
       const parsed: unknown = JSON.parse(await fs.readFile(file, 'utf8'));
-      if (parsed && typeof parsed === 'object') {
-        const p = parsed as Partial<VaultsConfigPreview>;
-        config = {
-          $schema: p.$schema ?? VAULTS_SCHEMA_URL,
-          version: 1,
-          default: p.default,
-          vaults: p.vaults && typeof p.vaults === 'object' ? p.vaults : {},
-        };
-      }
-    } catch {
-      // missing or invalid file -> start from a fresh, valid config
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+        throw new Error('Invalid vault configuration.');
+      const existing = parsed as Partial<VaultsConfigPreview>;
+      if (
+        existing.vaults !== undefined &&
+        (!existing.vaults || typeof existing.vaults !== 'object' || Array.isArray(existing.vaults))
+      )
+        throw new Error('Invalid vault entries.');
+      config = { ...config, ...existing, vaults: existing.vaults ?? {} };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
 
-    const cur: VaultEntryPreview = config.vaults[args.name] ?? {};
-    const next: VaultEntryPreview = { ...cur };
-    next.path = args.path;
+    const previous = args.previousName;
+    const renaming = previous && previous !== args.name && Object.hasOwn(config.vaults, previous);
+    if (renaming && Object.hasOwn(config.vaults, args.name)) {
+      throw new Error('A vault with the requested name already exists.');
+    }
+    const sourceName = renaming ? previous : args.name;
+    const cur = Object.hasOwn(config.vaults, sourceName) ? config.vaults[sourceName] : {};
+    const next: VaultEntryPreview = { ...cur, path: args.path };
     if (args.mcp.length) next.mcp = [...args.mcp];
     else delete next.mcp;
     if (args.syncEnabled) {
@@ -83,11 +88,10 @@ export const applyVaultsConfig = async (args: ApplyArgs): Promise<ApplyResult> =
       delete next.origin;
     }
 
-    if (args.previousName && args.previousName !== args.name)
-      delete config.vaults[args.previousName];
-    config.vaults[args.name] = next;
+    if (renaming) delete config.vaults[previous];
+    config.vaults = { ...config.vaults, [args.name]: next };
     if (args.makeDefault) config.default = args.name;
-    else if (config.default === args.name) delete config.default;
+    else if (config.default === sourceName || config.default === args.name) delete config.default;
 
     const tmp = `${file}.tmp`;
     await fs.writeFile(tmp, JSON.stringify(config, null, 2) + '\n', 'utf8');

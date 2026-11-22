@@ -99,3 +99,43 @@ describe('applyVaultsConfig (R2 managed write, R3 preserve hand-edits + other va
     expect(read().default).toBeUndefined(); // un-defaulted
   });
 });
+
+it('carries custom fields across a rename and protects an occupied destination', async () => {
+  const file = path.join(dir, 'vaults.json');
+  const vaults = { old: { custom: 'keep', origin: [{ remote: 'custom', interval: 9 }] }, work: {} };
+  fs.writeFileSync(file, JSON.stringify({ version: 1, default: 'old', vaults }));
+  const args = {
+    configDirSetting: dir,
+    previousName: 'old',
+    name: 'work',
+    makeDefault: false,
+    path: '/new',
+    syncEnabled: true,
+    remote: '',
+    mcp: [],
+  };
+  expect((await applyVaultsConfig(args)).ok).toBe(false);
+  expect(read().vaults).toEqual(vaults);
+  expect((await applyVaultsConfig({ ...args, name: 'new' })).ok).toBe(true);
+  expect(read().vaults).toEqual({ new: { ...vaults.old, path: '/new' }, work: {} });
+  expect(read().default).toBeUndefined();
+});
+
+it.each(['{', '[]', '{"vaults":[]}'])(
+  'preserves invalid config %s for recovery',
+  async (content) => {
+    const file = path.join(dir, 'vaults.json');
+    fs.writeFileSync(file, content);
+    const result = await applyVaultsConfig({
+      configDirSetting: dir,
+      name: 'personal',
+      makeDefault: false,
+      path: '/vault',
+      syncEnabled: false,
+      remote: '',
+      mcp: [],
+    });
+    expect(result.ok).toBe(false);
+    expect(fs.readFileSync(file, 'utf8')).toBe(content);
+  }
+);

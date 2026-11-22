@@ -1,3 +1,4 @@
+import { scheduleTimeout } from '../timer';
 // Desktop auth.json shared with the Agentage CLI. Node imports stay lazy for mobile.
 import type { AuthJsonWriter, AuthSession } from './token-store';
 import { requirePrivateWindowsAuth } from './windows-auth-acl';
@@ -67,7 +68,7 @@ async function mutateAuth(
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
         // The CLI can recover abandoned locks. The plugin never deletes another holder's lock.
         if (performance.now() >= deadline) throw new Error('Agentage credentials are busy.');
-        await new Promise<void>((resolve) => setTimeout(resolve, 30));
+        await new Promise<void>((resolve) => scheduleTimeout(resolve, 30));
       }
     }
 

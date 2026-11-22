@@ -1,3 +1,4 @@
+import { scheduleTimeout } from '../timer';
 // RFC 8252 loopback redirect for desktop OAuth. A one-shot localhost listener captures the
 // auth-code callback with NO OS protocol handler involved - snap/flatpak Obsidian silently
 // drop `obsidian://` callbacks (each cold-starts a new instance, losing the PKCE state), so
@@ -63,17 +64,7 @@ export async function startLoopbackServer(): Promise<LoopbackHandle> {
     throw new Error('could not bind a loopback port for sign-in');
   }
 
-  // `window` in the Obsidian renderer; the bare-global fallback is only ever taken under node
-  // (vitest), where `window` is absent - a transient OAuth timer needs no popout scoping.
-  type TimerHost = {
-    setTimeout: (cb: () => void, ms: number) => number;
-    clearTimeout: (id: number) => void;
-  };
-  const timers: TimerHost =
-    typeof window !== 'undefined'
-      ? (window as unknown as TimerHost)
-      : ({ setTimeout, clearTimeout } as unknown as TimerHost);
-  const timer = timers.setTimeout(() => {
+  const cancelTimeout = scheduleTimeout(() => {
     server.close();
     rejectParams(new Error('sign-in timed out'));
   }, TIMEOUT_MS);
@@ -82,7 +73,7 @@ export async function startLoopbackServer(): Promise<LoopbackHandle> {
     redirectUri: `http://127.0.0.1:${port}${CALLBACK_PATH}`,
     waitForCode,
     close: () => {
-      timers.clearTimeout(timer);
+      cancelTimeout();
       server.close();
     },
   };
