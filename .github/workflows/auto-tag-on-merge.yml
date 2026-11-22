@@ -1,0 +1,55 @@
+name: Auto-tag Release
+
+# Tag the lab release commit and dispatch the publisher from the lab branch.
+on:
+  push:
+    branches: [agentage-release-p53-20261121]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tag-agentage-p53-lab
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag the lab release
+    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-release-p53-20261121'
+    permissions:
+      contents: write # Push the pinned lab tag when it is absent.
+      actions: write # Dispatch the lab publisher.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Tag the release commit
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          MSG=$(git log -1 --pretty=%s)
+          echo "$MSG" | grep -qE '^chore\(release\): |^Merge pull request .* release/' || { echo "Not a release commit."; exit 0; }
+          V=$(node -p "require('./manifest.json').version")
+          test "$V" = "0.12.4-lab.p53.20261121"
+          test "$(git rev-parse HEAD)" = "a2529ae7357fb086590fcbe0bbfaa45f3db956bb"
+          REF="refs/tags/$V"
+          if git show-ref --verify --quiet "$REF"; then
+            if [ "$(git rev-parse "$REF^{commit}")" != "$(git rev-parse HEAD)" ]; then
+              echo "::error::Tag $V points to a different commit." >&2
+              exit 1
+            fi
+          else
+            git tag -- "$V"
+            git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin "$REF"
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+      - name: Dispatch release.yml
+        if: steps.tag.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release.yml --ref "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" -f build_current=true

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [agentage-p53-security]
+    branches: [agentage-p53-consolidated-20261122]
   pull_request:
     branches: [agentage-prepare-p53-20261121]
 
@@ -42,3 +42,23 @@ jobs:
       # Kept from pr-validation.yml: `verify` does not include coverage.
       - name: Test with coverage
         run: npm run test:coverage
+
+      - name: Verify all lab bundle assets
+        run: |
+          cat > SHA256SUMS <<'EOF'
+          cf81dedaa6a80e1ec92da5d27c06c5e7940cb7646bd62bfd2e0e325dcffa8ca4  main.js
+          480e6ab0deb5232e7d701c19360d58d6fb9f020c8e890d161a4b6d81c7eb5b0f  manifest.json
+          978a5bb11ece14f8f2843c9e96d3396309bc3103328fdb72fee303ef5e4a8115  styles.css
+          EOF
+          sha256sum --check --strict SHA256SUMS
+      - name: Upload verified lab build
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: agentage-p53-consolidated-build
+          path: |
+            main.js
+            manifest.json
+            styles.css
+            SHA256SUMS
+          if-no-files-found: error
+          retention-days: 3
