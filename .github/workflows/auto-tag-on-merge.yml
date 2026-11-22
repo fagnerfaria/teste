@@ -3,7 +3,7 @@ name: Auto-tag Release
 # Tag the lab release commit and dispatch the publisher from the lab branch.
 on:
   push:
-    branches: [agentage-release-p53-20261121]
+    branches: [agentage-p53-consolidated-20261122]
 
 permissions:
   contents: read
@@ -15,7 +15,7 @@ concurrency:
 jobs:
   tag:
     name: Tag the lab release
-    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-release-p53-20261121'
+    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-p53-consolidated-20261122'
     permissions:
       contents: write # Push the pinned lab tag when it is absent.
       actions: write # Dispatch the lab publisher.
@@ -33,18 +33,18 @@ jobs:
         run: |
           set -euo pipefail
           MSG=$(git log -1 --pretty=%s)
-          echo "$MSG" | grep -qE '^chore\(release\): |^Merge pull request .* release/' || { echo "Not a release commit."; exit 0; }
+          test "$MSG" = "ci: attest and publish the verified P5.3 lab candidate" || exit 0
           V=$(node -p "require('./manifest.json').version")
-          test "$V" = "0.12.4-lab.p53.20261121"
-          test "$(git rev-parse HEAD)" = "a2529ae7357fb086590fcbe0bbfaa45f3db956bb"
+          test "$V" = "0.12.4-lab.p53.20261122"
+          test "$(git rev-parse HEAD^)" = "e85a0d6557564af8e0f47f2ea6368a8d0be19cc0"
           REF="refs/tags/$V"
           if git show-ref --verify --quiet "$REF"; then
-            if [ "$(git rev-parse "$REF^{commit}")" != "$(git rev-parse HEAD)" ]; then
+            if [ "$(git rev-parse "$REF^{commit}")" != "e85a0d6557564af8e0f47f2ea6368a8d0be19cc0" ]; then
               echo "::error::Tag $V points to a different commit." >&2
               exit 1
             fi
           else
-            git tag -- "$V"
+            git tag -- "$V" "e85a0d6557564af8e0f47f2ea6368a8d0be19cc0"
             git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin "$REF"
           fi
           echo "version=$V" >> "$GITHUB_OUTPUT"

@@ -18,17 +18,17 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  LAB_RELEASE_TAG: '0.12.4-lab.p53.20261121'
-  LAB_RELEASE_COMMIT: 'a2529ae7357fb086590fcbe0bbfaa45f3db956bb'
+  LAB_RELEASE_TAG: '0.12.4-lab.p53.20261122'
+  LAB_RELEASE_COMMIT: 'e85a0d6557564af8e0f47f2ea6368a8d0be19cc0'
   LAB_RELEASE_SHA256: |
-    26047763419e4266830e12937c3ca33d1ca929f3c73c4ef9cca0af7c1c0450ed  main.js
-    a08cacf35d6ded45af4a63796a6e3e3a5c1fbcb40c043014d42d82dd3ad0aea4  manifest.json
+    cf81dedaa6a80e1ec92da5d27c06c5e7940cb7646bd62bfd2e0e325dcffa8ca4  main.js
+    480e6ab0deb5232e7d701c19360d58d6fb9f020c8e890d161a4b6d81c7eb5b0f  manifest.json
     978a5bb11ece14f8f2843c9e96d3396309bc3103328fdb72fee303ef5e4a8115  styles.css
 
 jobs:
   build:
     name: Build the pinned lab source
-    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-release-p53-20261121' && inputs.build_current && !inputs.draft
+    if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-p53-consolidated-20261122' && inputs.build_current && !inputs.draft
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
