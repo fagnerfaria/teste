@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [agentage-ci-p53-20261121]
+    branches: [agentage-ci-p53-20261121, agentage-p53-release-security]
 
 concurrency:
   group: ci-${{ github.ref }}
