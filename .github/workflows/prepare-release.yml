@@ -1,17 +1,13 @@
 name: Prepare Release
 
-# Opens the chore(release) PR and arms auto-merge. The PR gate verifies it like
-# any PR, auto-merge lands it, release.yml publishes on the merge. The PR is
-# authored with PAT_TOKEN so pull_request workflows fire (GITHUB_TOKEN PRs fire
-# nothing). Dispatched by agentage/automation on Fridays or by hand any day.
-# No cron, no direct push, no secrets beyond the PAT. Red run = the alarm.
+# Opens the lab release PR and requests auto-merge. Repository rules must
+# require the Verify check before the PR can merge.
 on:
   push:
     branches: [agentage-prepare-p53-20261121]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: agentage-prepare-p53-20261121
@@ -25,21 +21,21 @@ jobs:
   prepare:
     if: github.repository == 'fagnerfaria/teste' && github.ref == 'refs/heads/agentage-prepare-p53-20261121'
     name: Open release PR
+    permissions:
+      contents: write # Push the lab release branch.
+      pull-requests: write # Create the release PR and request auto-merge.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          token: ${{ github.token }}
+          persist-credentials: false
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
-          cache: npm
-
-      - name: Pin npm for the project lockfile
-        run: npm install --global npm@11.19.1
+          node-version-file: .nvmrc
+          package-manager-cache: false
 
       - name: Skip if a release PR is already open
         id: guard
@@ -70,7 +66,7 @@ jobs:
         run: |
           set -euo pipefail
           BUMP="$REQUESTED_BUMP"
-          LAST_TAG=$(git tag --list "$TAG_GLOB" --sort=-v:refname | head -1)
+          LAST_TAG=$(git tag --list "$TAG_GLOB" --sort=-v:refname --format='%(refname)' | sed -n '1p')
           RANGE=""; [ -n "$LAST_TAG" ] && RANGE="${LAST_TAG}..HEAD"
           # workflow-only commits (.github/**) never warrant a release
           SUBJECTS=$(git log $RANGE --no-merges --pretty=%s -- . ':!.github')
@@ -85,6 +81,16 @@ jobs:
           echo "Since ${LAST_TAG:-start}: feat=$FEAT code=$CODE deps=$DEPS -> $BUMP" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
 
+      - name: Require the GitHub Actions Verify rule
+        if: steps.decide.outputs.bump && steps.decide.outputs.bump != 'skip'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/rules/branches/$GITHUB_REF_NAME" |
+            jq -e 'any(.[]; .type == "required_status_checks" and
+              any(.parameters.required_status_checks[]; .context == "🔧 Verify" and .integration_id == 15368))' >/dev/null
+
       - name: Bump version
         id: bump
         if: steps.decide.outputs.bump && steps.decide.outputs.bump != 'skip'
@@ -92,9 +98,10 @@ jobs:
           BUMP_KIND: ${{ steps.decide.outputs.bump }}
         run: |
           set -euo pipefail
-          npm version --no-git-tag-version "$BUMP_KIND" >/dev/null
-          npm install --package-lock-only
-          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          npm version --ignore-scripts --no-git-tag-version "$BUMP_KIND" >/dev/null
+          VERSION=$(node -p "require('./package.json').version")
+          npm_package_version="$VERSION" node scripts/version-bump.mjs
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Open PR + arm auto-merge
         if: steps.bump.outputs.version
@@ -108,11 +115,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "release/agentage-p53-20261121"
-          git add -A
+          git add -- package.json package-lock.json manifest.json versions.json
           git commit -m "chore(release): ${V}"
-          git push origin "HEAD:refs/heads/release/agentage-p53-20261121"
+          git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin "HEAD:refs/heads/release/agentage-p53-20261121"
           URL=$(gh pr create --base agentage-prepare-p53-20261121 --head "release/agentage-p53-20261121" \
             --title "chore(release): laboratório Agentage P5.3 ${V}" \
             --body "PR de laboratório do prepare-release do Agentage P5.3 com bump $BUMP_KIND.")
-          gh pr merge "$URL" --auto --squash
+          gh pr merge "$URL" --auto --squash --match-head-commit "$(git rev-parse HEAD)"
           echo "Opened $URL - auto-merge armed." | tee -a "$GITHUB_STEP_SUMMARY"
